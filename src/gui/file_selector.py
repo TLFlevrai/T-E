@@ -3,12 +3,10 @@ from src.gui.selection import SelectionDialog
 
 def select_files(parent, folder_path, options):
     """
-    options est un dict avec les clés include_json, include_txt, etc.
-    On s'assure qu'il contient ignore_git et ignore_pycache.
+    Ouvre le dialogue de sélection. Retourne la liste des chemins relatifs
+    choisis (éventuellement vide si validé sans sélection), ou None si
+    l'utilisateur a annulé / fermé la fenêtre.
     """
-    # Le contrôleur (BaseController.get_include_options) ne renvoie pas encore ces nouvelles options.
-    # Il faut mettre à jour BaseController.get_include_options (étape 14).
-    # Ici, on suppose que 'options' les contient.
     dialog = SelectionDialog(parent, folder_path, options)
     parent.wait_window(dialog.window)
     return dialog.get_selected()

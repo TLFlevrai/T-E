@@ -34,7 +34,8 @@ class HistoryView(ttk.Frame):
         for entry in self.entries:
             self.text.insert(tk.END, entry.format_line() + "\n")
         self.text.config(state=tk.DISABLED)
-        self.text.see(tk.END)
+        # Les entrées les plus récentes sont insérées en haut : montrer le haut.
+        self.text.see('1.0')
     
     def clear(self):
         self.entries.clear()

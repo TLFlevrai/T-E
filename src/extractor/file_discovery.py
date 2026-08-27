@@ -37,16 +37,20 @@ class FileDiscoveryService:
         items = list(self._walk(Path(folder).resolve(), collect_dirs=False))
         return [(item.full_path, item.rel_path, item.extension) for item in items]
 
-    def find_all_paths(self, folder: str) -> Tuple[List[Tuple[Path, Path, str]], Set[Path]]:
+    def find_all_paths(self, folder: str, all_files: bool = False) -> Tuple[List[Tuple[Path, Path, str]], Set[Path]]:
         """
         Retourne (fichiers, dossiers_parents) pour génération de structure.
         Utilise le MÊME parcours optimisé que find_files.
+
+        Args:
+            all_files: si True, inclut TOUS les fichiers sans filtre d'extension
+                       (vidéos, images, archives, ...) tout en respectant le pruning.
         """
         folder_path = Path(folder).resolve()
         files = []
         dirs_set = set()
 
-        for item in self._walk(folder_path, collect_dirs=True):
+        for item in self._walk(folder_path, collect_dirs=True, all_files=all_files):
             if item.kind == 'file':
                 files.append((item.full_path, item.rel_path, item.extension))
             elif item.kind == 'dir':
@@ -69,13 +73,15 @@ class FileDiscoveryService:
             self.rel_path = rel_path
             self.extension = extension
 
-    def _walk(self, folder_path: Path, collect_dirs: bool = False) -> Iterator[_WalkItem]:
+    def _walk(self, folder_path: Path, collect_dirs: bool = False,
+              all_files: bool = False) -> Iterator[_WalkItem]:
         """
         Générateur unique de parcours avec pruning.
         
         Args:
             folder_path: Racine du parcours (déjà résolue)
             collect_dirs: Si True, émet aussi les dossiers découverts
+            all_files: Si True, ne filtre pas par extension (structure complète)
             
         Yields:
             _WalkItem pour chaque fichier (et dossier si collect_dirs)
@@ -102,9 +108,11 @@ class FileDiscoveryService:
 
             # Collecter les fichiers
             for fname in filenames:
-                if not self._is_extractable_file(fname):
+                # Filtre d'extension : uniquement si on ne veut PAS tout inclure
+                if not all_files and not self._is_extractable_file(fname):
                     continue
-                if self.options.ignore_init and fname == '__init__.py':
+                # ignore_init : option d'extraction, sans effet sur la structure complète
+                if self.options.ignore_init and fname == '__init__.py' and not all_files:
                     continue
 
                 full_path = root_path / fname

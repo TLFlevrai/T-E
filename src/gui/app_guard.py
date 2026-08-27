@@ -36,6 +36,22 @@ def install_excepthook(on_crash: Optional[Callable[[str], None]] = None):
     sys.excepthook = _hook
 
 
+def install_thread_excepthook():
+    """Logue les exceptions non gérées des threads (sinon invisibles : les
+    threads daemon font échouer silencieusement les callbacks planifiés)."""
+
+    def _hook(args: threading.ExceptHookArgs):
+        if args.exc_type is SystemExit:
+            return
+        logger.error(
+            "Exception non gérée dans le thread %s :\n%s",
+            args.thread.name if args.thread is not None else '?',
+            "".join(traceback.format_exception(args.exc_type, args.exc_value, args.exc_tb)),
+        )
+
+    threading.excepthook = _hook
+
+
 def install_tk_callback_guard(root: tk.Tk, on_crash: Optional[Callable[[str], None]] = None):
     """
     Intercepte les exceptions survenues dans les callbacks Tkinter

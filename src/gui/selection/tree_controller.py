@@ -25,7 +25,6 @@ class TreeController:
                 # sinon on les sélectionne tous.
                 new_state = (selected != total)
                 self.set_folder_state(item, new_state)
-                self._update_parent_state(item)
         return self.items_state
 
     def set_item_state(self, item, state):
@@ -37,40 +36,46 @@ class TreeController:
         self._update_parent_state(item)
 
     def set_folder_state(self, folder_item, state):
-        """Applique l'état à tous les fichiers d'un dossier (récursivement)."""
-        for child in self.folder_children.get(folder_item, []):
-            if child in self.file_iids:
-                self.set_item_state(child, state)
-            elif child in self.folder_iids:
-                self.set_folder_state(child, state)
+        """Applique l'état à tous les fichiers extractibles du dossier (itératif).
+
+        Les indicateurs sont rafraîchis une seule fois à la fin : appliquer
+        l'état fichier par fichier avec mise à jour des ancêtres serait
+        quadratique sur les grands arborescences.
+        """
+        stack = [folder_item]
+        glyph = "☑" if state else "☐"
+        while stack:
+            current = stack.pop()
+            if current in self.file_iids:
+                # Ne pas toucher les fichiers non extractibles ('•')
+                if self.tree.set(current, "select") == "•":
+                    continue
+                self.items_state[current] = state
+                self.tree.set(current, "select", glyph)
+            elif current in self.folder_iids:
+                stack.extend(self.folder_children.get(current, []))
         self._update_folder_indicator(folder_item)
         self._update_parent_state(folder_item)
 
     def select_by_extension(self, ext):
         """Sélectionne tous les fichiers avec une extension donnée."""
-        for iid in self.file_nodes.values():  # iid
+        def _filter(iid):
             tags = self.tree.item(iid, "tags")
-            if ext in tags:
-                self.set_item_state(iid, True)
+            return ext in tags
+        self._bulk_apply(_filter, lambda iid: True)
 
     def select_all(self):
         """Sélectionne tous les fichiers extractibles."""
-        for iid in self.file_nodes.values():
-            if self.tree.set(iid, "select") != "•":
-                self.set_item_state(iid, True)
+        self._bulk_apply(lambda iid: True, lambda iid: True)
 
     def deselect_all(self):
         """Désélectionne tous les fichiers."""
-        for iid in self.file_nodes.values():
-            if self.tree.set(iid, "select") != "•":
-                self.set_item_state(iid, False)
+        self._bulk_apply(lambda iid: True, lambda iid: False)
 
     def invert_selection(self):
         """Inverse la sélection."""
-        for iid in self.file_nodes.values():
-            if self.tree.set(iid, "select") != "•":
-                current = self.items_state.get(iid, False)
-                self.set_item_state(iid, not current)
+        self._bulk_apply(lambda iid: True,
+                         lambda iid: not self.items_state.get(iid, False))
 
     def get_selected_files(self):
         """Retourne la liste des chemins relatifs sélectionnés."""
@@ -82,6 +87,38 @@ class TreeController:
         return sum(1 for state in self.items_state.values() if state)
 
     # --- Méthodes privées ---
+
+    def _bulk_apply(self, include_fn, state_fn):
+        """Applique state_fn aux fichiers acceptés par include_fn en un seul
+        passage, puis rafraîchit chaque indicateur de dossier une seule fois.
+        Complexité : O(fichiers + somme des sous-arbres une fois), au lieu de
+        O(fichiers × profondeur × sous-arbre) avec la version par fichier.
+        """
+        for iid in self.file_nodes.values():
+            if self.tree.set(iid, "select") == "•":
+                continue
+            if not include_fn(iid):
+                continue
+            state = state_fn(iid)
+            self.items_state[iid] = state
+            self.tree.set(iid, "select", "☑" if state else "☐")
+        self._refresh_all_folder_indicators()
+
+    def _refresh_all_folder_indicators(self):
+        """Met à jour l'indicateur de tous les dossiers, du plus profond au
+        plus haut (un seul passage)."""
+        folders = list(self.folder_nodes.values())
+        folders.sort(key=self._depth, reverse=True)
+        for folder in folders:
+            self._update_folder_indicator(folder)
+
+    def _depth(self, iid):
+        depth = 0
+        parent = self.tree.parent(iid)
+        while parent:
+            depth += 1
+            parent = self.tree.parent(parent)
+        return depth
 
     def _count_files_in_subtree(self, iid):
         """

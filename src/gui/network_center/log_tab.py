@@ -5,10 +5,12 @@ from datetime import datetime
 from src.i18n import _
 
 class LogTab(ttk.Frame):
+    MAX_LINES = 500
+
     def __init__(self, parent, dialog):
         super().__init__(parent)
         self.dialog = dialog
-        self.log_entries = []  # pour limiter
+        self._line_count = 0  # compteur : évite de relire tout le buffer par ligne
 
         self._create_widgets()
 
@@ -31,18 +33,19 @@ class LogTab(ttk.Frame):
     def _append(self, message):
         self.text.config(state=tk.NORMAL)
         self.text.insert(tk.END, message + "\n")
+        self._line_count += 1
+        # Limiter à MAX_LINES : supprimer d'un coup les lignes en excès
+        if self._line_count > self.MAX_LINES:
+            excess = self._line_count - self.MAX_LINES
+            self.text.delete("1.0", f"{excess + 1}.0")
+            self._line_count = self.MAX_LINES
         self.text.see(tk.END)
         self.text.config(state=tk.DISABLED)
-        # Limiter à 500 lignes
-        lines = self.text.get(1.0, tk.END).count('\n')
-        if lines > 500:
-            self.text.config(state=tk.NORMAL)
-            self.text.delete(1.0, 2.0)  # supprime la première ligne
-            self.text.config(state=tk.DISABLED)
 
     def _clear(self):
         self.text.config(state=tk.NORMAL)
         self.text.delete(1.0, tk.END)
+        self._line_count = 0
         self.text.config(state=tk.DISABLED)
 
     def on_event(self, event_type, data):

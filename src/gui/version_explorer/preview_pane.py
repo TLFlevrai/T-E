@@ -4,7 +4,11 @@ from tkinter import ttk
 from typing import Optional
 from src.i18n import _
 from src.services.version_service import VersionEntry
-from .utils import parse_date_from_header, get_file_stats
+
+# L'aperçu n'affiche que l'en-tête + le bloc STATISTIQUES (≈ 50 lignes) :
+# lire tout le fichier (parfois plusieurs Mo) sur le thread UI à chaque
+# sélection est inutile. 64 Ko couvrent largement ces sections.
+PREVIEW_READ_BYTES = 64 * 1024
 
 
 class PreviewPane:
@@ -31,10 +35,11 @@ class PreviewPane:
             self.text.config(state=tk.DISABLED)
             return
 
-        # Lire le fichier et extraire l'en-tête et le bloc STATISTIQUES
+        # Lire seulement le début du fichier : l'en-tête et les statistiques
+        # se trouvent dans les premiers kilo-octets.
         try:
-            with open(entry.path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            with open(entry.path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read(PREVIEW_READ_BYTES)
         except Exception as e:
             self.text.insert(tk.END, f"Erreur de lecture : {e}")
             self.text.config(state=tk.DISABLED)

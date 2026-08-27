@@ -104,10 +104,11 @@ class BaseController:
             'include_css': self.ui.include_css.get(),
             'include_js': self.ui.include_js.get(),
             'ignore_init': self.ui.ignore_init.get(),
-            'ignore_git': self.ui.ignore_git.get(),         # NOUVEAU
-            'ignore_pycache': self.ui.ignore_pycache.get(), # NOUVEAU
+            'ignore_git': self.ui.ignore_git.get(),
+            'ignore_pycache': self.ui.ignore_pycache.get(),
             'include_statistics': self.ui.include_statistics.get(),
-            'include_file_metadata': self.ui.include_file_metadata.get()
+            'include_file_metadata': self.ui.include_file_metadata.get(),
+            'archive_old': self.ui.archive_old.get()
         }
 
     def reset_selection(self):

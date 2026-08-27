@@ -95,7 +95,6 @@ class SelectionDialog:
             data['folder_nodes'],
             data['folder_children']
         )
-        self.controller.items_state = {}
 
         # Mettre à jour la recherche avec les items
         self.search.tree = self.tree
@@ -142,4 +141,7 @@ class SelectionDialog:
         self.window.destroy()
 
     def get_selected(self):
-        return self.selected_files if hasattr(self, 'selected_files') else []
+        """Retourne la liste sélectionnée, ou None si annulé (bouton Annuler
+        ou fermeture de la fenêtre) : permet au contrôleur de distinguer
+        « validation sans fichier » d'une véritable annulation."""
+        return self.selected_files if hasattr(self, 'selected_files') else None

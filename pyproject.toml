@@ -1,14 +1,14 @@
 [project]
-name = "text-exporter"
-version = "1.0.0"
-description = "Extracteur de code Python/JSON/TXT/HTML/CSS/JS avec GUI, versioning et réseau"
+name = "te"
+version = "2.0.0"
+description = "TE : toolkit desktop multi-outils (extraction, conversion, vidéo, calculatrice, réseau, versions)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "TLF", email = "tlf@example.com"}
 ]
-keywords = ["code-extractor", "gui", "tkinter", "i18n", "network"]
+keywords = ["toolkit", "gui", "tkinter", "i18n", "network", "extractor", "converter"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -17,29 +17,31 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Code Generators",
+    "Topic :: Multimedia :: Video :: Conversion",
     "Topic :: Text Processing :: General",
+    "Topic :: Utilities",
 ]
 dependencies = [
     "pydantic>=2.0",
     "fpdf2>=2.7",
     "pillow>=10.0",
     "ttkbootstrap>=1.10",
+    "resvg-py>=0.4",
+    "yt-dlp>=2024.1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
-    "pytest-mock",
     "pytest-cov",
     "ruff>=0.1",
     "mypy>=1.0",
     "pre-commit",
     "babel>=2.18",
-    "types-requests",
+    "polib>=1.2",
 ]
 test = [
     "pytest>=7.0",
-    "pytest-mock",
     "pytest-cov",
 ]
 
@@ -52,8 +54,8 @@ Issues = "https://github.com/tlf/text-exporter/issues"
 domain = "messages"
 input_dirs = ["src"]
 output_file = "locale/messages.pot"
-project = "Text Exporter"
-version = "1.0.0"
+project = "TE"
+version = "2.0.0"
 msgid_bugs_address = ""
 copyright_holder = ""
 sort_output = true
@@ -70,6 +72,8 @@ python = "babel.extract:extract_python"
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "F",   # pyflakes
@@ -98,19 +102,16 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S106", "S311"]
 "src/config/__init__.py" = ["B008"]
-src = ["src"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
-trailing-commas = "always"
 line-ending = "lf"
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 known-third-party = ["pydantic", "fpdf2", "tkinter", "babel", "polib"]
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -192,41 +193,18 @@ exclude_lines = [
 ]
 precision = 2
 
-[tool.pre-commit]
-default_stages = ["commit"]
-default_language_version = "python3.10"
-
-repos = [
-    {repo = "https://github.com/astral-sh/ruff-pre-commit", rev = "v0.3.0", hooks = [
-        {id = "ruff", args = ["check", "--fix", "--exit-non-zero-on-fix"]},
-        {id = "ruff-format", args = ["--check"]},
-    ]},
-    {repo = "https://github.com/pre-commit/pre-commit-hooks", rev = "v4.5.0", hooks = [
-        {id = "trailing-whitespace"},
-        {id = "end-of-file-fixer"},
-        {id = "check-yaml"},
-        {id = "check-toml"},
-        {id = "check-json"},
-        {id = "check-merge-conflict"},
-        {id = "debug-logger"},
-        {id = "check-added-large-files", args = ["--maxkb=500"]},
-    ]},
-    {repo = "https://github.com/pre-commit/mirrors-mypy", rev = "v1.8.0", hooks = [
-        {id = "mypy", args = ["--strict", "--show-error-codes"]},
-    ]},
-    {repo = "local", hooks = [
-        {id = "pybabel-compile", name = "Compile translations", entry = "pybabel compile -d locale -D messages", language = "system", types = ["file"], files = "locale/.*\\.po$"},
-    ]},
-]
+# Packaging : `src` est un vrai paquet (imports absolus `from src...`),
+# main.py reste à la racine et sert de point d'entrée console.
+[tool.setuptools]
+py-modules = ["main"]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
 include = ["src*"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+exclude = ["tests*", "htmlcov*", "out*", "locale*"]
 
 [tool.setuptools.entry-points]
 console_scripts = [
+    "te = main:main",
     "text-exporter = main:main",
 ]

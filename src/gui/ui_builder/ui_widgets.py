@@ -61,6 +61,10 @@ class UIWidgets:
     # Controller reference
     controller: object = None
     
+    # Navigation entre outils (fournie par le Shell TE)
+    navigate_to: Optional[Callable[[str], None]] = None
+    quit_callback: Optional[Callable[[], None]] = None
+    
     # Internal: lazy widgets for i18n refresh
     _lazy_widgets: list = field(default_factory=list)
     _lazy_tooltips: list = field(default_factory=list)
@@ -92,3 +96,13 @@ def create_ui_widgets(config_obj) -> UIWidgets:
     )
     
     return ui
+
+
+def register_lazy_widget(ui: UIWidgets, widget, msgid: str):
+    """Enregistre un widget avec son message pour mise à jour ultérieure."""
+    ui._lazy_widgets.append((widget, msgid, 'text'))
+
+
+def register_lazy_labelframe(ui: UIWidgets, labelframe, msgid: str):
+    """Enregistre un LabelFrame avec son message pour mise à jour ultérieure."""
+    ui._lazy_widgets.append((labelframe, msgid, 'label'))

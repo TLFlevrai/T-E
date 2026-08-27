@@ -15,7 +15,6 @@ class StatusTab(ttk.Frame):
         self.last_received = ""
 
         self._create_widgets()
-        self._update_status()
 
     def _create_widgets(self):
         main = ttk.Frame(self, padding=10)

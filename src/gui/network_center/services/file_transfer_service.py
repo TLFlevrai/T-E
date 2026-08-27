@@ -63,17 +63,13 @@ class FileTransferService:
         progress_callback: Optional[Callable[[int, int], None]],
         result_callback: Optional[Callable[[TransferResult], None]]
     ):
+        sock = None
         try:
-            # Lecture fichier
-            with open(file_path, 'rb') as f:
-                data = f.read()
-
-            if len(data) > self.MAX_FILE_SIZE:
+            total_size = file_path.stat().st_size
+            if total_size > self.MAX_FILE_SIZE:
                 raise ValueError("Fichier trop volumineux (>100Mo)")
 
             filename = file_path.name
-            file_hash = sha256(data).digest()
-            total_size = len(data)
 
             # Connexion
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -92,21 +88,25 @@ class FileTransferService:
             sock.sendall(name_bytes)
             sock.sendall(total_size.to_bytes(8, 'big'))
 
-            # 3. Envoi données par chunks
+            # 3. Envoi données par chunks (hash incrémental, sans charger le fichier en RAM)
+            hasher = sha256()
             sent = 0
-            while sent < total_size and not self._cancel_event.is_set():
-                chunk = data[sent:sent + self.CHUNK_SIZE]
-                sock.sendall(chunk)
-                sent += len(chunk)
-                if progress_callback:
-                    progress_callback(sent, total_size)
+            with open(file_path, 'rb') as f:
+                while sent < total_size and not self._cancel_event.is_set():
+                    chunk = f.read(self.CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    sock.sendall(chunk)
+                    hasher.update(chunk)
+                    sent += len(chunk)
+                    if progress_callback:
+                        progress_callback(sent, total_size)
 
             if self._cancel_event.is_set():
                 raise InterruptedError("Transfert annulé")
 
             # 4. Envoi hash
-            sock.sendall(file_hash)
-            sock.close()
+            sock.sendall(hasher.digest())
 
             if result_callback:
                 result_callback(TransferResult(success=True, hostname=peer_ip))
@@ -118,6 +118,12 @@ class FileTransferService:
         except Exception as e:
             logger.error(f"Erreur envoi : {e}")
             self._notify_error(result_callback, f"Échec de l'envoi : {e}")
+        finally:
+            if sock is not None:
+                try:
+                    sock.close()
+                except OSError:
+                    pass
 
     def _notify_error(self, callback: Optional[Callable[[TransferResult], None]], msg: str):
         if callback:

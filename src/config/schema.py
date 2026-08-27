@@ -35,8 +35,8 @@ class ExtractionOptions(BaseModel):
 
 class GuiConfig(BaseModel):
     """Configuration de l'interface graphique."""
-    window_width: int = Field(default=700, ge=400, le=1920, description="Largeur de la fenêtre")
-    window_height: int = Field(default=600, ge=300, le=1080, description="Hauteur de la fenêtre")
+    window_width: int = Field(default=1100, ge=400, le=1920, description="Largeur de la fenêtre")
+    window_height: int = Field(default=750, ge=300, le=1080, description="Hauteur de la fenêtre")
     window_x: int = Field(default=-1, ge=-1, description="Position X de la fenêtre (-1 = centré)")
     window_y: int = Field(default=-1, ge=-1, description="Position Y de la fenêtre (-1 = centré)")
     version_window_width: int = Field(default=1000, ge=600, le=1920, description="Largeur fenêtre versions")
@@ -48,6 +48,10 @@ class GuiConfig(BaseModel):
     theme: str = Field(default="system", description="Thème : system, light, dark, custom")
     # Thème personnalisé (stocké comme JSON string ou dict)
     custom_theme: dict = Field(default_factory=dict, description="Couleurs du thème personnalisé")
+    # Raccourcis clavier personnalisés : {command_id: accélérateur}
+    shortcuts: dict[str, str] = Field(default_factory=dict, description="Raccourcis personnalisés par commande")
+    # Dossier de téléchargement YouTube
+    youtube_dir: str = Field(default="downloads", description="Dossier de destination des téléchargements YouTube")
     # Session
     last_folder: str = Field(default="", description="Dernier dossier sélectionné (restauré au démarrage)")
 
@@ -59,7 +63,7 @@ class AppConfig(BaseModel):
     archive_subdir: str = Field(default="old_out", description="Sous-dossier pour l'archive des anciennes versions")
     version_file: str = Field(default="extractor_version.txt", description="Nom du fichier de version")
     language: str = Field(default="fr", description="Langue de l'interface (fr ou en)")
-    
+
     network: NetworkConfig = Field(default_factory=NetworkConfig, description="Configuration réseau")
     extraction: ExtractionOptions = Field(default_factory=ExtractionOptions, description="Options d'extraction")
     gui: GuiConfig = Field(default_factory=GuiConfig, description="Configuration de l'interface")

@@ -42,14 +42,24 @@ class DiscoveryService:
                     continue
                 except Exception:
                     break
+                if not data or not addr or not addr[0]:
+                    continue
                 if data == self.broadcast_msg:
-                    hostname = socket.gethostname()
+                    # Répondre uniquement aux demandes valides ; borne la taille
+                    # du nom d'hôte diffusé (un datagramme UDP reste petit).
+                    hostname = socket.gethostname()[:255]
                     reply = f"{self.reply_msg.decode()}:{hostname}".encode()
-                    sock.sendto(reply, addr)
+                    try:
+                        sock.sendto(reply, addr)
+                    except OSError:
+                        continue
                 elif data.startswith(self.reply_msg):
-                    parts = data.decode().split(':', 1)
-                    if len(parts) == 2:
-                        hostname = parts[1]
+                    try:
+                        parts = data.decode('utf-8', errors='replace').split(':', 1)
+                    except Exception:
+                        continue
+                    if len(parts) == 2 and parts[1]:
+                        hostname = parts[1][:255]
                         with self._lock:
                             self._peers[addr[0]] = hostname
 
@@ -69,12 +79,14 @@ class DiscoveryService:
                 try:
                     data, addr = sock.recvfrom(1024)
                     if data.startswith(self.reply_msg):
-                        parts = data.decode().split(':', 1)
-                        if len(parts) == 2:
-                            hostname = parts[1]
+                        parts = data.decode('utf-8', errors='replace').split(':', 1)
+                        if len(parts) == 2 and parts[1] and addr and addr[0]:
+                            hostname = parts[1][:255]
                             with self._lock:
                                 self._peers[addr[0]] = hostname
                 except socket.timeout:
+                    break
+                except OSError:
                     break
         with self._lock:
             return dict(self._peers)

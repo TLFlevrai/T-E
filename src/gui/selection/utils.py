@@ -35,7 +35,3 @@ def get_allowed_extensions(options):
 def format_size(size_bytes):
     """Retourne la taille formatée via human_size."""
     return human_size(size_bytes) if size_bytes >= 0 else "?"
-
-def count_selected(items_state):
-    """Retourne le nombre de fichiers sélectionnés."""
-    return sum(1 for state in items_state.values() if state)

@@ -1,6 +1,7 @@
 # src/gui/network_center/send_tab.py
 import tkinter as tk
 from tkinter import ttk
+from datetime import datetime
 from typing import Optional
 from src.i18n import _
 from src.logger import setup_logger
@@ -24,25 +25,33 @@ class SendTab(ttk.Frame):
     Orchestre les vues et services, gère le threading UI.
     """
     
-    def __init__(self, parent, dialog, discovery, output_dir):
+    def __init__(self, parent, dialog, discovery, output_dir, lazy=False):
         super().__init__(parent)
         self.dialog = dialog
         self.output_dir = output_dir
-        
+
         # Services
         self.file_service = FileListingService(output_dir)
         self.network_service = NetworkScannerService(discovery)
         self.transfer_service = FileTransferService()
-        
+
         # État
         self.selected_file: Optional[FileItem] = None
         self.selected_peer: Optional[Peer] = None
-        
+
         self._create_views()
         self._layout_views()
-        self._bind_events()
-        
-        # Chargement initial
+
+        # Chargement initial : différé à la première affichage de l'onglet
+        # quand lazy=True (évite rglob + scan réseau à l'ouverture du dialogue).
+        if not lazy:
+            self.initial_load()
+
+    def initial_load(self):
+        """Chargement initial (appelé une fois, quand l'onglet est affiché)."""
+        if getattr(self, '_initial_loaded', False):
+            return
+        self._initial_loaded = True
         self.refresh_files()
         self.scan_network()
     
@@ -68,9 +77,16 @@ class SendTab(ttk.Frame):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(3, weight=1)
     
-    def _bind_events(self):
-        # Les callbacks sont passés dans les constructeurs des vues
-        pass
+    def _marshal(self, fn):
+        """Planifie fn sur le thread UI ; vérifie l'existence du dialogue
+        DANS le callback (jamais depuis le thread worker)."""
+        def run():
+            if self.winfo_exists():
+                fn()
+        try:
+            self.dialog.after(0, run)
+        except tk.TclError:
+            pass
     
     # --- Callbacks Vues ---
     
@@ -107,7 +123,7 @@ class SendTab(ttk.Frame):
     
     def _scan_worker(self):
         peers = self.network_service.scan(timeout=2)
-        self.dialog.after(0, lambda: self._scan_finished(peers))
+        self._marshal(lambda: self._scan_finished(peers))
     
     def _scan_finished(self, peers):
         self.peer_view.populate(peers)
@@ -133,17 +149,17 @@ class SendTab(ttk.Frame):
     
     def _on_progress(self, current: int, total: int):
         percent = (current / total * 100) if total > 0 else 0
-        self.dialog.after(0, lambda: self.controls.set_progress(percent))
-    
+        self._marshal(lambda: self.controls.set_progress(percent))
+
     def _on_transfer_complete(self, result: TransferResult):
         def ui_update():
             self.controls.set_send_enabled(True)
-            
+
             if result.success:
                 self.controls.set_status(_("Envoi réussi"))
                 self.controls.set_progress(100)
                 self.history.add_entry(SendHistoryEntry(
-                    timestamp=__import__('datetime').datetime.now().strftime("%H:%M:%S"),
+                    timestamp=datetime.now().strftime("%H:%M:%S"),
                     filename=self.selected_file.name if self.selected_file else "?",
                     peer=self.selected_peer.display_name if self.selected_peer else "?",
                     status=_("Succès")
@@ -161,12 +177,12 @@ class SendTab(ttk.Frame):
                 self.controls.set_status(_("Échec de l'envoi"))
                 self.controls.set_progress(0)
                 self.history.add_entry(SendHistoryEntry(
-                    timestamp=__import__('datetime').datetime.now().strftime("%H:%M:%S"),
+                    timestamp=datetime.now().strftime("%H:%M:%S"),
                     filename=self.selected_file.name if self.selected_file else "?",
                     peer=self.selected_peer.display_name if self.selected_peer else "?",
                     status=_("Échec")
                 ))
                 show_error(_("Erreur"), result.error_message, parent=self, log=False)
                 logger.error(result.error_message)
-        
-        self.dialog.after(0, ui_update)
+
+        self._marshal(ui_update)

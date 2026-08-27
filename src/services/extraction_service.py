@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Optional, List, Callable, Tuple
 from src.config import ExtractionOptions, get_config
+from src.i18n import _
 from src.versioning import VersionManager
 from src.logger import setup_logger
 from src.services.interfaces import ICodeExtractor, IVersionManager
@@ -90,11 +91,46 @@ class ExtractionService:
                 'total_files': py_count + json_count + txt_count + po_count + mo_count + html_count + css_count + js_count,
                 'output_filename': str(output_filename)
             }
+
+            # Option « Archiver les anciennes versions » : déplace les
+            # versions actives précédentes du même projet vers le dossier
+            # d'archive. Best-effort : ne fait jamais échouer l'extraction.
+            if merged_dict.get('archive_old'):
+                self._archive_previous_versions(
+                    folder_name, Path(output_filename), log_callback)
+
             logger.info(f"Extraction réussie : {output_filename}")
             return True, str(output_filename), stats
         else:
             logger.error("Échec de l'extraction")
             return False, None, None
+
+    def _archive_previous_versions(self, project_name: str, new_file: Path,
+                                   log_callback=None) -> int:
+        """Archive les anciennes versions actives du projet (sauf la nouvelle)."""
+        try:
+            from src.services.version_service import VersionArchiveService
+            archive_service = VersionArchiveService()
+            archived = 0
+            for entries in archive_service.scan_projects().values():
+                for entry in entries:
+                    if entry.project != project_name or entry.status != 'active':
+                        continue
+                    if entry.path.resolve() == new_file.resolve():
+                        continue
+                    try:
+                        archive_service.archive(entry)
+                        archived += 1
+                        if log_callback:
+                            log_callback(_("Ancienne version archivée : {}").format(entry.path.name))
+                    except Exception as e:
+                        logger.warning(f"Archivage impossible de {entry.path} : {e}")
+            if archived and log_callback:
+                log_callback(_("{} ancienne(s) version(s) archivée(s)").format(archived))
+            return archived
+        except Exception as e:
+            logger.error(f"Erreur pendant l'archivage des anciennes versions : {e}")
+            return 0
 
     def _create_extractor_with_options(self, options: ExtractionOptions) -> ICodeExtractor:
         """

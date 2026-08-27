@@ -77,10 +77,11 @@ class ExtractionController(BaseController):
                     cancel_event=self._cancel_event,
                 )
 
-                self.root.after(0, lambda: self._extraction_finished(success, output_filename, stats))
+                self.root.after(0, lambda s=success, f=output_filename, st=stats:
+                                self._extraction_finished(s, f, st))
             except Exception as e:
                 logger.error(f"Erreur dans le thread d'extraction : {e}")
-                self.root.after(0, lambda: self._extraction_error(e))
+                self.root.after(0, lambda err=e: self._extraction_error(err))
 
         threading.Thread(target=extraction_thread, daemon=True).start()
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import webbrowser
 from src.i18n import _
 from src.logger import setup_logger
+from .app_guard import safe_after
 from .base_dialog import BaseDialog
 from .video_converter_core import VideoConverterCore, VideoConversionOptions
 
@@ -224,20 +225,33 @@ class VideoToMP3Converter(BaseDialog):
             volume=self.volume_var.get(),
         )
 
+        # Les callbacks sont invoqués depuis le thread de travail du
+        # convertisseur : passer par safe_after (jamais de widget depuis un
+        # thread worker).
+        def _on_progress_thread(msg: str):
+            safe_after(self, 0, lambda: self._set_status_if_alive(msg))
+
         self.converter.convert(
             input_path=self.video_path,
             output_path=self.output_path,
             options=options,
-            on_progress=lambda msg: self.after(0, lambda: self.status_var.set(msg)),
+            on_progress=_on_progress_thread,
             on_complete=self._on_conversion_complete,
         )
 
+    def _set_status_if_alive(self, msg: str):
+        try:
+            if self.winfo_exists():
+                self.status_var.set(msg)
+        except tk.TclError:
+            pass
+
     def _on_conversion_complete(self, success: bool, error_msg: str | None):
-        """Callback appelé à la fin de la conversion."""
+        """Callback appelé à la fin de la conversion (thread de travail)."""
         if success:
-            self.after(0, self._conversion_success)
+            safe_after(self, 0, self._conversion_success)
         else:
-            self.after(0, lambda: self._conversion_error(error_msg or "Erreur inconnue"))
+            safe_after(self, 0, lambda: self._conversion_error(error_msg or "Erreur inconnue"))
 
     def _conversion_success(self):
         """Appelé quand la conversion réussit."""

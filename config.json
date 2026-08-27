@@ -34,10 +34,10 @@
     "include_file_metadata": false
   },
   "gui": {
-    "window_width": 700,
-    "window_height": 580,
-    "window_x": 930,
-    "window_y": 420,
+    "window_width": 1007,
+    "window_height": 612,
+    "window_x": 741,
+    "window_y": 231,
     "version_window_width": 1000,
     "version_window_height": 650,
     "version_window_x": -1,
@@ -46,6 +46,8 @@
     "log_autoscroll": true,
     "theme": "system",
     "custom_theme": {},
+    "shortcuts": {},
+    "youtube_dir": "downloads",
     "last_folder": ""
   }
 }

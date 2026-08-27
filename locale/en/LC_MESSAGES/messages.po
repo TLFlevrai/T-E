@@ -6,12 +6,12 @@ msgstr ""
 "POT-Creation-Date: 2026-08-18 11:18+0300\n"
 "PO-Revision-Date: 2026-08-16 21:50+0200\n"
 "Last-Translator: \n"
-"Language: en\n"
 "Language-Team: \n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: src/gui/controller/extraction_controller.py:92
@@ -30,7 +30,8 @@ msgstr "Extraction failed"
 #: src/gui/network_center/received_tab.py:120
 #: src/gui/network_center/received_tab.py:140
 #: src/gui/network_center/send_tab.py:167 src/gui/ui_builder/menus.py:162
-#: src/gui/version_explorer/dialog.py:81 src/gui/version_explorer/dialog.py:103
+#: src/gui/version_explorer/dialog.py:81
+#: src/gui/version_explorer/dialog.py:103
 #: src/gui/version_explorer/dialog.py:189
 #: src/gui/version_explorer/dialog.py:197
 #: src/gui/version_explorer/dialog.py:203
@@ -69,11 +70,11 @@ msgstr "Location: {}"
 #: src/gui/extraction_runner.py:39
 #, python-brace-format
 msgid ""
-"Fichiers extraits : {} (Python: {}, JSON: {}, TXT: {}, PO: {}, MO: {}, "
-"HTML: {}, CSS: {}, JS: {})"
-msgstr ""
-"Files extracted: {} (Python: {}, JSON: {}, TXT: {}, PO: {}, MO: {}, HTML:"
+"Fichiers extraits : {} (Python: {}, JSON: {}, TXT: {}, PO: {}, MO: {}, HTML:"
 " {}, CSS: {}, JS: {})"
+msgstr ""
+"Files extracted: {} (Python: {}, JSON: {}, TXT: {}, PO: {}, MO: {}, HTML: "
+"{}, CSS: {}, JS: {})"
 
 #: src/gui/extraction_runner.py:49
 #, fuzzy
@@ -802,7 +803,8 @@ msgstr "Restore error"
 #: src/gui/version_explorer/dialog.py:161
 #, fuzzy, python-brace-format
 msgctxt "confirmation"
-msgid "Supprimer definitivement {} version(s) ? Cette action est irreversible."
+msgid ""
+"Supprimer definitivement {} version(s) ? Cette action est irreversible."
 msgstr "Permanently delete {} version(s)? This action is irreversible."
 
 #: src/gui/version_explorer/dialog.py:164
@@ -909,6 +911,206 @@ msgstr "Lines"
 msgid "Statut"
 msgstr "Status"
 
+#: src/core:1
+msgid "TE"
+msgstr "TE"
+
+#: src/core:1
+msgid "Extraction"
+msgstr "Extract"
+
+#: src/core:1
+msgid "Conversion"
+msgstr "Convert"
+
+#: src/core:1
+msgid "Vidéo"
+msgstr "Video"
+
+#: src/core:1
+msgid "Calculatrice"
+msgstr "Calculator"
+
+#: src/core:1
+msgid "Réseau"
+msgstr "Network"
+
+#: src/core:1
+msgid "Versions"
+msgstr "Versions"
+
+#: src/core:1
+msgid "Paramètres"
+msgstr "Settings"
+
+#: src/core:1
+msgid "Principal"
+msgstr "Main"
+
+#: src/core:1
+msgid "Médias"
+msgstr "Media"
+
+#: src/core:1
+msgid "Données"
+msgstr "Data"
+
+#: src/core:1
+msgid "Personnalisation"
+msgstr "Customization"
+
+#: src/core:1
+msgid "Utilitaires"
+msgstr "Utilities"
+
+#: src/core:1
+msgid "Divers"
+msgstr "Miscellaneous"
+
+#: src/core:1
+msgid "Extraire le code et la structure d'un projet."
+msgstr "Extract a project's code and structure."
+
+#: src/core:1
+msgid "Convertir des images SVG en icônes ICO."
+msgstr "Convert SVG images into ICO icons."
+
+#: src/core:1
+msgid "Convertir des vidéos en fichiers MP3."
+msgstr "Convert videos into MP3 files."
+
+#: src/core:1
+msgid "Calculatrice simple et sécurisée."
+msgstr "Simple and safe calculator."
+
+#: src/core:1
+msgid "Envoyer et recevoir des fichiers sur le réseau."
+msgstr "Send and receive files over the network."
+
+#: src/core:1
+msgid "Gérer les versions d'export des projets."
+msgstr "Manage project export versions."
+
+#: src/core:1
+msgid "Utilitaires et personnalisation de TE."
+msgstr "TE utilities and customization."
+
+#: src/core:1
+msgid "Configurer TE : langue, thème, formats, sortie."
+msgstr "Configure TE: language, theme, formats, output."
+
+#: src/core:1
+msgid "Rechercher une commande ou un outil..."
+msgstr "Search for a command or tool..."
+
+#: src/core:1
+msgid "Aucun résultat"
+msgstr "No results"
+
+#: src/core:1
+msgid "Raccourci"
+msgstr "Shortcut"
+
+#: src/core:1
+msgid "Catégorie"
+msgstr "Category"
+
+#: src/core:1
+msgid "Exemple"
+msgstr "Example"
+
+#: src/core:1
+msgid "Lancer"
+msgstr "Launch"
+
+#: src/core:1
+msgid "Fermer"
+msgstr "Close"
+
+#: src/core:1
+msgid "Naviguer"
+msgstr "Navigate"
+
+#: src/core:1
+msgid "Commandes"
+msgstr "Commands"
+
+#: src/core:1
+msgid "Ouvrir le dossier de sortie"
+msgstr "Open the output folder"
+
+#: src/core:1
+msgid "Vider les emplacements récents"
+msgstr "Clear recent locations"
+
+#: src/core:1
+msgid "Palette de commandes"
+msgstr "Command palette"
+
+#: src/core:1
+msgid "Quitter TE"
+msgstr "Quit TE"
+
+#: src/core:1
+msgid "Rechercher et lancer un outil ou une action"
+msgstr "Search and launch a tool or an action"
+
+#: src/core:1
+msgid "Fermer l'application"
+msgstr "Close the application"
+
+#: src/core:1
+msgid "Personnaliser les couleurs du thème"
+msgstr "Customize the theme colors"
+
+#: src/core:1
+msgid "Personnaliser les couleurs du thème de TE."
+msgstr "Customize TE's theme colors."
+
+#: src/core:1
+msgid "Efface la liste des dossiers récents."
+msgstr "Clears the recent folders list."
+
+#: src/core:1
+msgid "Extrait le projet sélectionné et génère un PDF."
+msgstr "Extracts the selected project and generates a PDF."
+
+#: src/core:1
+msgid "Vide le journal d'extraction."
+msgstr "Clears the extraction log."
+
+#: src/core:1
+msgid "Applique ce preset aux options d'extraction."
+msgstr "Applies this preset to the extraction options."
+
+#: src/core:1
+msgid "Les options de l'outil Extraction sont mises à jour immédiatement."
+msgstr "The Extraction tool options are updated immediately."
+
+#: src/core:1
+msgid "Ouvre le dossier des exports (out/)."
+msgstr "Opens the exports folder (out/)."
+
+#: src/core:1
+msgid "Sauvegarder"
+msgstr "Save"
+
+#: src/core:1
+msgid "Paramètres enregistrés"
+msgstr "Settings saved"
+
+#: src/core:1
+msgid "Impossible de sauvegarder la configuration."
+msgstr "Unable to save the configuration."
+
+#: src/core:1
+msgid "TE — {}"
+msgstr "TE — {}"
+
+#: src/core:1
+msgid "Preset d'export"
+msgstr "Export preset"
+
 #~ msgid "  - Fichiers Python : {}"
 #~ msgstr "  - Python files: {}"
 
@@ -984,3 +1186,106 @@ msgstr "Status"
 #~ msgid "Journal"
 #~ msgstr "Log"
 
+#: src/tools/youtube.py
+msgid "URL de la vidéo YouTube"
+msgstr "YouTube video URL"
+
+#: src/tools/youtube.py
+msgid "Collez l'URL d'une vidéo YouTube puis choisissez le format."
+msgstr "Paste a YouTube video URL, then choose the format."
+
+#: src/tools/youtube.py
+msgid "Format de téléchargement"
+msgstr "Download format"
+
+#: src/tools/youtube.py
+msgid "Vidéo (MP4)"
+msgstr "Video (MP4)"
+
+#: src/tools/youtube.py
+msgid "Audio (MP3)"
+msgstr "Audio (MP3)"
+
+#: src/tools/youtube.py
+msgid "Qualité vidéo"
+msgstr "Video quality"
+
+#: src/tools/youtube.py
+msgid "Meilleure qualité"
+msgstr "Best quality"
+
+#: src/tools/youtube.py
+msgid "Dossier de destination"
+msgstr "Destination folder"
+
+#: src/tools/youtube.py
+msgid "Parcourir..."
+msgstr "Browse..."
+
+#: src/tools/youtube.py
+msgid "Télécharger"
+msgstr "Download"
+
+#: src/tools/youtube.py
+msgid "Dossier"
+msgstr "Folder"
+
+#: src/tools/youtube.py
+msgid "Le dossier n'existe pas encore."
+msgstr "The folder does not exist yet."
+
+#: src/tools/youtube.py
+msgid "Veuillez saisir une URL YouTube."
+msgstr "Please enter a YouTube URL."
+
+#: src/tools/youtube.py
+msgid "URL invalide : elle doit commencer par http(s)://"
+msgstr "Invalid URL: it must start with http(s)://"
+
+#: src/tools/youtube.py
+msgid "Analyse de la vidéo..."
+msgstr "Analyzing video..."
+
+#: src/tools/youtube.py
+msgid "Récupération des informations..."
+msgstr "Fetching video information..."
+
+#: src/tools/youtube.py
+msgid "Téléchargement : {percent:.0f}%"
+msgstr "Downloading: {percent:.0f}%"
+
+#: src/tools/youtube.py
+msgid "{speed} Mo/s"
+msgstr "{speed} MB/s"
+
+#: src/tools/youtube.py
+msgid "{eta} s restantes"
+msgstr "{eta} s remaining"
+
+#: src/tools/youtube.py
+msgid "Finalisation du fichier..."
+msgstr "Finalizing file..."
+
+#: src/tools/youtube.py
+msgid "Téléchargement terminé !"
+msgstr "Download complete!"
+
+#: src/tools/youtube.py
+msgid "Téléchargement terminé ! Le fichier est dans : {folder}"
+msgstr "Download complete! The file is in: {folder}"
+
+#: src/tools/youtube.py
+msgid "Erreur de téléchargement : {message}"
+msgstr "Download error: {message}"
+
+#: src/tools/youtube.py
+msgid "YouTube"
+msgstr "YouTube"
+
+#: src/tools/youtube.py
+msgid "Télécharger des vidéos YouTube (MP4 ou MP3)."
+msgstr "Download YouTube videos (MP4 or MP3)."
+
+#: src/tools/youtube.py
+msgid "yt-dlp n'est pas installé. Lancez : pip install yt-dlp"
+msgstr "yt-dlp is not installed. Run: pip install yt-dlp"

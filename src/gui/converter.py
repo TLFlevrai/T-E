@@ -152,41 +152,15 @@ class SVGToICOConverter(BaseDialog):
         self.status_var.set(_("Conversion en cours..."))
 
         try:
-            from PIL import Image
-            
-            # Ouvrir le SVG
-            img = Image.open(self.svg_path)
-            
-            # Convertir en RGBA si nécessaire
-            if img.mode != 'RGBA':
-                img = img.convert('RGBA')
-            
-            # Créer les différentes tailles
-            ico_images = []
-            total = len(sizes)
-            
-            for i, size in enumerate(sizes):
-                # Redimensionner avec un filtre de haute qualité
-                resized = img.resize((size, size), Image.Resampling.LANCZOS)
-                ico_images.append(resized)
-                
-                # Mettre à jour la progression
-                progress = int((i + 1) / total * 100)
-                self.progress_var.set(progress)
-                self.status_var.set(_("Conversion : {}x{}").format(size, size))
-                self.update_idletasks()
-            
-            # Sauvegarder en ICO
-            self.status_var.set(_("Enregistrement du fichier ICO..."))
+            from .svg_utils import svg_to_ico
+
+            # Rendre le SVG et l'enregistrer en ICO multi-tailles
+            self.progress_var.set(30)
+            self.status_var.set(_("Rendu du SVG..."))
             self.update_idletasks()
-            
-            ico_images[0].save(
-                self.ico_path,
-                format='ICO',
-                sizes=[(img.width, img.height) for img in ico_images],
-                append_images=ico_images[1:]
-            )
-            
+
+            svg_to_ico(self.svg_path, self.ico_path, sizes)
+
             self.progress_var.set(100)
             self.status_var.set(_("Conversion terminée avec succès !"))
             

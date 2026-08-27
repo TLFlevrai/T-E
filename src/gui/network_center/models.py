@@ -35,17 +35,6 @@ class SendHistoryEntry:
     filename: str
     peer: str
     status: str  # "Succès" | "Échec" | "En cours"
-    
+
     def format_line(self) -> str:
         return f"[{self.timestamp}] {self.filename} → {self.peer} : {self.status}"
-
-
-@dataclass
-class TransferProgress:
-    """Progression d'un transfert."""
-    current: int
-    total: int
-    
-    @property
-    def percent(self) -> float:
-        return (self.current / self.total * 100) if self.total > 0 else 0.0

@@ -157,7 +157,9 @@ class AdvancedTab:
 
         # Bouton éditeur de thème
         ttk.Button(self.parent, text=_("Personnaliser le thème..."),
-                   command=lambda: open_theme_editor(self.dialog)).grid(row=3, column=2, padx=10, pady=8)
+                   command=lambda: open_theme_editor(
+                       getattr(self.dialog, 'parent_widget', self.dialog)
+                   )).grid(row=3, column=2, padx=10, pady=8)
 
         # Presets d'export
         ttk.Separator(self.parent, orient=tk.HORIZONTAL).grid(

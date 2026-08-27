@@ -54,8 +54,8 @@ def temp_config(tmp_path):
             "include_file_metadata": True
         },
         "gui": {
-            "window_width": 700,
-            "window_height": 600,
+            "window_width": 1100,
+            "window_height": 750,
             "log_height": 12
         }
     }

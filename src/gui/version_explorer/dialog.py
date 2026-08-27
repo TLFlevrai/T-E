@@ -68,13 +68,17 @@ class VersionExplorerDialog(BaseDialog):
             self.geometry(f"{width}x{height}+{x}+{y}")
 
     def _save_window_geometry(self):
-        """Sauvegarde la géométrie actuelle de la fenêtre."""
+        """Sauvegarde la géométrie actuelle de la fenêtre (valeurs bornées)."""
         try:
+            width = max(600, min(1920, self.winfo_width()))
+            height = max(400, min(1080, self.winfo_height()))
+            x = max(-1, self.winfo_x())
+            y = max(-1, self.winfo_y())
             self.config.update_gui(
-                version_window_width=self.winfo_width(),
-                version_window_height=self.winfo_height(),
-                version_window_x=self.winfo_x(),
-                version_window_y=self.winfo_y(),
+                version_window_width=width,
+                version_window_height=height,
+                version_window_x=x,
+                version_window_y=y,
             )
         except Exception:
             pass
@@ -101,10 +105,20 @@ class VersionExplorerDialog(BaseDialog):
     # --- Callbacks du contrôleur ---
 
     def _marshal(self, func):
-        """Exécute le callback sur le thread principal de Tkinter."""
+        """Exécute le callback sur le thread principal de Tkinter.
+
+        La vérification d'existence se fait DANS le callback planifié (thread
+        UI) : l'appeler depuis le thread worker puis faire after() laisse une
+        fenêtre où le dialogue peut être détruit entre les deux.
+        """
         def wrapper(*args):
-            if self.winfo_exists():
-                self.after(0, lambda: func(*args))
+            def run():
+                if self.winfo_exists():
+                    func(*args)
+            try:
+                self.after(0, run)
+            except tk.TclError:
+                pass
         return wrapper
 
     def _set_status(self, msg):

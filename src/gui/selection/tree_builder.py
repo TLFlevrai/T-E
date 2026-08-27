@@ -77,6 +77,5 @@ class TreeBuilder:
                                        values=(select_char, path.name, size_str))
                 self.file_nodes[rel_str] = iid
                 self.folder_children.setdefault(parent_iid, []).append(iid)
-                self.tree.set(iid, "select", select_char)
                 self.tree.item(iid, tags=(ext,))
                 self.all_items.append(iid)

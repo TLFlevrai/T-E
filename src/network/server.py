@@ -2,6 +2,8 @@
 import socket
 import threading
 import re
+import os
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
@@ -11,6 +13,34 @@ from src.logger import setup_logger
 from src.config import get_config
 
 logger = setup_logger(__name__)
+
+# Timeout appliqué aux connexions clientes une fois acceptées.
+# Le socket d'écoute garde son propre timeout court (pour vérifier _stop_event),
+# mais il ne doit PAS être hérité par les transferts (sinon tout stall > 1s
+# interromprait un transfert légitime).
+CLIENT_TIMEOUT = 30.0
+
+# Noms de périphériques réservés Windows (con, prn, aux, nul, com1-9, lpt1-9)
+_WINDOWS_RESERVED = {
+    'CON', 'PRN', 'AUX', 'NUL',
+    *(f'COM{i}' for i in range(1, 10)),
+    *(f'LPT{i}' for i in range(1, 10)),
+}
+
+
+def recv_exact(conn: socket.socket, n: int) -> bytes:
+    """Lit exactement n octets depuis le socket.
+
+    TCP est un flux : un seul recv(n) peut retourner moins de n octets.
+    Cette boucle garantit la lecture complète ou l'échec (connexion fermée).
+    """
+    buf = bytearray()
+    while len(buf) < n:
+        chunk = conn.recv(n - len(buf))
+        if not chunk:
+            break
+        buf.extend(chunk)
+    return bytes(buf)
 
 
 class ReceiveServer(threading.Thread):
@@ -31,8 +61,11 @@ class ReceiveServer(threading.Thread):
 
         # Auth config
         self.auth_enabled = cfg.get('network.auth_enabled', True)
-        self.auth_token = cfg.get('network.auth_token', 'change-me-secure-random-token').encode('utf-8')
-        self.allowed_extensions = set(cfg.get('network.allowed_extensions', ['.txt']))
+        self.auth_token = str(cfg.get('network.auth_token', 'change-me-secure-random-token')).encode('utf-8')
+        # Normalisation : les comparaisons se font en minuscules côté serveur,
+        # la config doit donc être normalisée ici ('.TXT' et '.txt' doivent marcher)
+        raw_extensions = cfg.get('network.allowed_extensions', ['.txt']) or ['.txt']
+        self.allowed_extensions = {str(e).strip().lower() for e in raw_extensions}
 
         if self.auth_enabled and self.auth_token == b'change-me-secure-random-token':
             logger.warning("[WARN] TOKEN D'AUTHENTIFICATION PAR DEFAUT DETECTE ! Changez 'auth_token' dans config.json")
@@ -52,11 +85,33 @@ class ReceiveServer(threading.Thread):
             self._observers.remove(callback)
 
     def _notify(self, event_type, data=None):
-        for cb in self._observers:
+        for cb in list(self._observers):
             try:
                 cb(event_type, data)
             except Exception as e:
                 logger.error(f"Erreur dans un observateur : {e}")
+
+    @staticmethod
+    def _sanitize_filename(raw_filename: str) -> str:
+        """Nettoie un nom de fichier reçu du réseau.
+
+        - ne conserve que le nom (protection traversée de chemin) ;
+        - remplace les caractères non sûrs ;
+        - borne la longueur ;
+        - neutralise les noms de périphériques réservés Windows.
+        """
+        filename = Path(raw_filename).name
+        if not filename or filename in {'.', '..'}:
+            return ''
+        filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+        if filename.startswith('.'):
+            filename = '_' + filename
+        stem = Path(filename).stem.upper()
+        if stem in _WINDOWS_RESERVED:
+            filename = '_' + filename
+        if len(filename) > ReceiveServer.MAX_FILENAME_LEN:
+            filename = filename[:ReceiveServer.MAX_FILENAME_LEN]
+        return filename
 
     def _verify_auth(self, conn) -> bool:
         """Vérifie le token HMAC-SHA256 envoyé par le client."""
@@ -65,16 +120,16 @@ class ReceiveServer(threading.Thread):
 
         try:
             # Lire la taille du token (2 bytes)
-            token_len_bytes = conn.recv(2)
-            if not token_len_bytes:
+            token_len_bytes = recv_exact(conn, 2)
+            if len(token_len_bytes) != 2:
                 return False
             token_len = int.from_bytes(token_len_bytes, 'big')
-            
+
             if token_len > 1024:  # Protection DoS
                 return False
 
             # Lire le token client
-            client_token = conn.recv(token_len)
+            client_token = recv_exact(conn, token_len)
             if len(client_token) != token_len:
                 return False
 
@@ -86,7 +141,26 @@ class ReceiveServer(threading.Thread):
             return False
 
     def run(self):
-        self.received_dir.mkdir(parents=True, exist_ok=True)
+        # Sécurité : refuser d'exposer le serveur hors de la machine locale avec
+        # le token public connu (le canal n'est pas chiffré, l'auth serait décorative).
+        if self.host not in {'127.0.0.1', 'localhost', '::1'} and self.auth_enabled \
+                and self.auth_token == b'change-me-secure-random-token':
+            msg = (
+                "Refus de démarrer le serveur sur %s : le jeton d'authentification "
+                "par défaut est public. Définissez un 'network.auth_token' unique dans "
+                "config.json avant d'écouter sur une interface non locale." % self.host
+            )
+            logger.error(msg)
+            self._notify('start_failed', {'error': msg})
+            return
+
+        try:
+            self.received_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            logger.error(f"Impossible de créer le dossier de réception : {e}")
+            self._notify('start_failed', {'error': str(e)})
+            return
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
@@ -100,17 +174,24 @@ class ReceiveServer(threading.Thread):
                 self._notify('start_failed', {'error': str(e)})
                 return
 
+            accept_errors = 0
             while not self._stop_event.is_set():
                 try:
                     conn, addr = server_socket.accept()
                 except socket.timeout:
                     continue
-                except Exception as e:
-                    logger.error(f"Erreur accept : {e}")
-                    break
+                except OSError as e:
+                    # Erreur transitoire (ex: EMFILE) : on logue et on continue,
+                    # sauf si le socket est fermé (arrêt volontaire).
+                    accept_errors += 1
+                    logger.error(f"Erreur accept ({accept_errors}) : {e}")
+                    if accept_errors >= 50 or server_socket.fileno() < 0:
+                        break
+                    continue
+                accept_errors = 0
+                conn.settimeout(CLIENT_TIMEOUT)
                 self._executor.submit(self._handle_client, conn, addr)
 
-            self._notify('stopped', {})
             logger.info("Serveur arrêté")
 
     def _handle_client(self, conn, addr):
@@ -122,8 +203,8 @@ class ReceiveServer(threading.Thread):
                 return
 
             # 2. Lecture nom fichier
-            name_size_bytes = conn.recv(4)
-            if not name_size_bytes:
+            name_size_bytes = recv_exact(conn, 4)
+            if len(name_size_bytes) != 4:
                 logger.warning(f"Connexion fermée par {addr} avant le nom")
                 self._notify('rejected', {'reason': 'no_name', 'addr': addr})
                 return
@@ -133,16 +214,18 @@ class ReceiveServer(threading.Thread):
                 self._notify('rejected', {'reason': 'name_too_long', 'addr': addr})
                 return
 
-            raw_filename = conn.recv(name_size).decode('utf-8')
-            filename = Path(raw_filename).name
+            try:
+                raw_filename = recv_exact(conn, name_size).decode('utf-8')
+            except UnicodeDecodeError:
+                logger.warning(f"Nom illisible (UTF-8 invalide) de {addr}")
+                self._notify('rejected', {'reason': 'invalid_name', 'addr': addr})
+                return
+
+            filename = self._sanitize_filename(raw_filename)
             if not filename:
                 logger.warning(f"Nom vide de {addr}")
                 self._notify('rejected', {'reason': 'empty_name', 'addr': addr})
                 return
-
-            filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
-            if len(filename) > self.MAX_FILENAME_LEN:
-                filename = filename[:self.MAX_FILENAME_LEN]
 
             ext = Path(filename).suffix.lower()
             if ext not in self.allowed_extensions:
@@ -151,8 +234,8 @@ class ReceiveServer(threading.Thread):
                 return
 
             # 3. Taille des données
-            data_size_bytes = conn.recv(8)
-            if not data_size_bytes:
+            data_size_bytes = recv_exact(conn, 8)
+            if len(data_size_bytes) != 8:
                 logger.warning(f"Connexion fermée par {addr} avant la taille")
                 self._notify('rejected', {'reason': 'no_size', 'addr': addr})
                 return
@@ -162,46 +245,64 @@ class ReceiveServer(threading.Thread):
                 self._notify('rejected', {'reason': 'file_too_large', 'size': data_size, 'addr': addr})
                 return
 
-            # 4. Réception données + hash (streaming pour éviter OOM)
+            # 4. Réception en streaming vers un fichier temporaire (hash incrémental).
+            # Évite de bufferiser jusqu'à 100 Mo par connexion en mémoire.
+            hasher = sha256()
             received_hash = b''
-            file_data = b''
             bytes_received = 0
-            
-            while bytes_received < data_size + 32:
-                remaining = (data_size + 32) - bytes_received
-                chunk = conn.recv(min(4096, remaining))
-                if not chunk:
-                    break
-                
-                if bytes_received + len(chunk) <= data_size:
-                    file_data += chunk
-                else:
-                    # On a dépassé les données fichier, le reste c'est le hash
-                    split_idx = data_size - bytes_received
-                    if split_idx > 0:
-                        file_data += chunk[:split_idx]
-                    received_hash += chunk[split_idx:]
-                
-                bytes_received += len(chunk)
+            tmp_path = None
+            try:
+                fd, tmp_name = tempfile.mkstemp(prefix='recv_', suffix='.part', dir=str(self.received_dir))
+                tmp_path = Path(tmp_name)
+                with os.fdopen(fd, 'wb') as tmp_file:
+                    while bytes_received < data_size + 32:
+                        remaining = (data_size + 32) - bytes_received
+                        chunk = recv_exact(conn, min(65536, remaining))
+                        if not chunk:
+                            break
 
-            if len(file_data) != data_size or len(received_hash) != 32:
+                        overflow = bytes_received + len(chunk) - data_size
+                        if overflow <= 0:
+                            hasher.update(chunk)
+                            tmp_file.write(chunk)
+                        else:
+                            file_part = chunk[:len(chunk) - overflow]
+                            hash_part = chunk[len(chunk) - overflow:]
+                            hasher.update(file_part)
+                            tmp_file.write(file_part)
+                            received_hash += hash_part
+                        bytes_received += len(chunk)
+            except Exception:
+                if tmp_path is not None:
+                    _silent_unlink(tmp_path)
+                raise
+
+            if bytes_received != data_size + 32 or len(received_hash) != 32:
                 logger.error(f"Taille reçue incorrecte pour {filename} de {addr}")
+                _silent_unlink(tmp_path)
                 self._notify('rejected', {'reason': 'incomplete', 'filename': filename, 'addr': addr})
                 return
 
             # 5. Vérification hash
-            computed_hash = sha256(file_data).digest()
+            computed_hash = hasher.digest()
             if not hmac.compare_digest(computed_hash, received_hash):
                 logger.error(f"Hash incorrect pour {filename} de {addr}")
+                _silent_unlink(tmp_path)
                 self._notify('rejected', {'reason': 'hash_mismatch', 'filename': filename, 'addr': addr})
                 return
 
-            # 6. Sauvegarde
+            # 6. Sauvegarde atomique (renommage du fichier temporaire validé)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_name = f"{timestamp}_{filename}"
-            filepath = self.received_dir / safe_name
-            with open(filepath, 'wb') as f:
-                f.write(file_data)
+            filepath = self.received_dir / f"{timestamp}_{filename}"
+            counter = 1
+            while filepath.exists():
+                filepath = self.received_dir / f"{timestamp}_{counter}_{filename}"
+                counter += 1
+            try:
+                os.replace(str(tmp_path), str(filepath))
+            except OSError:
+                _silent_unlink(tmp_path)
+                raise
 
             logger.info(f"Fichier reçu de {addr}: {filepath} ({data_size} octets)")
             self._notify('file_received', {
@@ -215,11 +316,29 @@ class ReceiveServer(threading.Thread):
             logger.error(f"Erreur inattendue avec {addr} : {e}")
             self._notify('rejected', {'reason': 'exception', 'error': str(e), 'addr': addr})
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except OSError:
+                pass
 
     def stop(self):
+        """Arrête le serveur sans bloquer le thread appelant (UI).
+
+        L'arrêt signale l'événement et ferme le socket d'écoute ; les
+        transferts déjà en cours sont annulés au plus vite. On ne joint pas
+        l'exécuteur ici : cette méthode peut être appelée depuis le thread UI
+        pendant la fermeture de la fenêtre.
+        """
         logger.info("Arrêt du serveur demandé")
+        if self._stop_event.is_set():
+            return
         self._stop_event.set()
-        self._executor.shutdown(wait=True, cancel_futures=False)
         self._notify('stopped', {})
-        logger.info("Serveur arrêté")
+        self._executor.shutdown(wait=False, cancel_futures=True)
+
+
+def _silent_unlink(path: Path) -> None:
+    try:
+        os.unlink(path)
+    except OSError:
+        pass

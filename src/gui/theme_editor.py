@@ -22,11 +22,20 @@ class ThemeEditorDialog(BaseDialog):
         self.config = get_config()
         self.color_vars = {}
         self.color_previews = {}
-        
+
+        # État à restaurer si l'utilisateur quitte sans sauvegarder :
+        # l'aperçu modifie le thème global, "Annuler"/fermeture doivent
+        # rétablir exactement ce qui était appliqué à l'ouverture.
+        gui_config = self.config.get_all().gui
+        self._previous_theme_name = getattr(gui_config, 'theme', 'system')
+        self._previous_custom_theme = dict(getattr(gui_config, 'custom_theme', {}) or {})
+
         # Charger le thème personnalisé actuel ou créer à partir du thème par défaut
         self._load_custom_theme()
 
         self._create_widgets()
+        # Fermeture par la croix = annulation : restaurer l'aperçu
+        self.protocol("WM_DELETE_WINDOW", self._cancel)
 
     def _load_custom_theme(self):
         """Charge le thème personnalisé depuis la config."""
@@ -90,7 +99,7 @@ class ThemeEditorDialog(BaseDialog):
 
         ttk.Button(btn_frame, text=_("Aperçu"), command=self._preview_theme).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text=_("Réinitialiser (défaut)"), command=self._reset_to_default).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text=_("Annuler"), command=self.destroy).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text=_("Annuler"), command=self._cancel).pack(side=tk.RIGHT, padx=5)
         ttk.Button(btn_frame, text=_("Appliquer et sauvegarder"), command=self._apply_and_save).pack(side=tk.RIGHT, padx=5)
 
     def _create_color_section(self, parent, color_items):
@@ -150,6 +159,12 @@ class ThemeEditorDialog(BaseDialog):
         temp_theme = self.custom_theme.copy()
         THEMES['custom'] = temp_theme
         apply_theme('custom')
+
+    def _cancel(self):
+        """Ferme l'éditeur en restaurant le thème appliqué avant l'aperçu."""
+        THEMES['custom'] = dict(self._previous_custom_theme)
+        apply_theme(self._previous_theme_name)
+        self.destroy()
 
     def _reset_to_default(self):
         """Réinitialise au thème par défaut (blanc neutre)."""

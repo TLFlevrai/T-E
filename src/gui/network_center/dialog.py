@@ -29,6 +29,13 @@ class NetworkCenterDialog(BaseDialog):
         self._create_widgets()
         self._subscribe_to_server()
 
+        # Chargements paresseux : ne scanner le réseau / lister les fichiers
+        # que lorsqu'un onglet concerné est réellement affiché (l'ouverture
+        # du centre réseau ne doit pas déclencher de broadcast inutile).
+        self._lazy_loaded_tabs = set()
+        self.notebook.bind('<<NotebookTabChanged>>', self._on_tab_changed)
+        self._on_tab_changed()
+
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _create_widgets(self):
@@ -40,7 +47,7 @@ class NetworkCenterDialog(BaseDialog):
 
         # Passer self.controller (MainController) qui a get_server()
         self.status_tab = StatusTab(notebook, self, self.controller)
-        self.send_tab = SendTab(notebook, self, self.discovery, self.output_dir)
+        self.send_tab = SendTab(notebook, self, self.discovery, self.output_dir, lazy=True)
         self.received_tab = ReceivedTab(notebook, self, self.output_dir)
         self.log_tab = LogTab(notebook, self)
 
@@ -50,6 +57,15 @@ class NetworkCenterDialog(BaseDialog):
         notebook.add(self.log_tab, text=_("Journal réseau"))
 
         self.notebook = notebook
+
+    def _on_tab_changed(self, _event=None):
+        try:
+            current = self.notebook.nametowidget(self.notebook.select())
+        except Exception:
+            return
+        if current is self.send_tab and 'send' not in self._lazy_loaded_tabs:
+            self._lazy_loaded_tabs.add('send')
+            self.send_tab.initial_load()
 
     def _subscribe_to_server(self):
         if self.server:

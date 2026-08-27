@@ -1,11 +1,10 @@
 # src/gui/version_explorer/version_tree.py
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable, List, Optional
+from typing import Callable, List
 from src.i18n import _
 from src.utils import human_size
 from src.services.version_service import VersionEntry
-from .utils import parse_date_from_header, get_file_stats
 
 
 class VersionTree:
@@ -88,22 +87,11 @@ class VersionTree:
         self._entry_map.clear()
 
     def _on_select(self, event):
-        selected_iids = self.tree.selection()
+        selected_iids = set(self.tree.selection())
         # Mettre à jour les glyphes : on garde les sélectionnés avec ☑
-        for item in self.tree.get_children():
-            if item in selected_iids:
-                self.tree.item(item, text='☑')
-                self.selected_items.add(item)
-            else:
-                self.tree.item(item, text='☐')
-                self.selected_items.discard(item)
+        self._sync_glyphs(selected_iids)
         # Appeler le callback avec la liste des entrées sélectionnées
-        selected_entries = []
-        for iid in selected_iids:
-            entry = self._entry_map.get(iid)
-            if entry:
-                selected_entries.append(entry)
-        self.on_version_select(selected_entries)
+        self.on_version_select(self._entries_for(self.tree.selection()))
 
     def _on_double_click(self, event):
         item = self.tree.identify_row(event.y)
@@ -125,20 +113,44 @@ class VersionTree:
         return self.current_entries
 
     def select_all(self):
-        for item in self.tree.get_children():
-            self.tree.selection_add(item)
-            self.tree.item(item, text='☑')
-            self.selected_items.add(item)
-        # Mettre à jour le callback avec toutes les entrées
-        all_entries = [self._entry_map.get(item) for item in self.tree.get_children() if item in self._entry_map]
-        self.on_version_select(all_entries)
+        """Sélectionne toutes les versions en une seule opération.
+
+        selection_set avec tous les iids génère un seul événement
+        <<TreeviewSelect>> : les glyphes et le callback sont donc mis à jour
+        une seule fois (au lieu de n×mises à jour avec selection_add par item).
+        """
+        all_items = list(self.tree.get_children())
+        if not all_items:
+            self.on_version_select([])
+            return
+        self.tree.selection_set(all_items)
+        # _on_select est déclenché par l'événement ; on force quand même
+        # l'état cohérent si l'événement ne s'est pas propagé.
+        if self.tree.selection() != tuple(all_items):
+            self._sync_glyphs(set(all_items))
+            self.on_version_select(self._entries_for(all_items))
 
     def deselect_all(self):
+        all_items = list(self.tree.get_children())
+        self.tree.selection_remove(all_items)
+        if self.tree.selection():
+            self._sync_glyphs(set())
+            self.on_version_select([])
+
+    # --- Helpers internes ---
+
+    def _sync_glyphs(self, selected_iids: set):
+        """Met à jour les glyphes ☑/☐ de toutes les lignes en un passage."""
         for item in self.tree.get_children():
-            self.tree.selection_remove(item)
-            self.tree.item(item, text='☐')
-            self.selected_items.discard(item)
-        self.on_version_select([])
+            if item in selected_iids:
+                self.tree.item(item, text='☑')
+                self.selected_items.add(item)
+            else:
+                self.tree.item(item, text='☐')
+                self.selected_items.discard(item)
+
+    def _entries_for(self, iids):
+        return [self._entry_map[iid] for iid in iids if iid in self._entry_map]
 
     def refresh(self):
         # Repeupler avec les mêmes entrées (les métadonnées peuvent avoir changé)

@@ -9,11 +9,14 @@ from src.extractor.file_discovery import FileDiscoveryService
 def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
     """
     Génère la structure du projet en s'appuyant sur FileDiscoveryService.
-    Garantit la cohérence : Structure affichée = Fichiers extraits.
+    Inclut TOUS les fichiers trouvés dans le dossier (code, images, vidéos,
+    archives, ...) tout en respectant les règles de parcours (.git, __pycache__,
+    include_subdirs) : la structure reflète fidèlement le projet réel.
     """
     folder_path = Path(folder)
     discovery = FileDiscoveryService(options)
-    files, dirs = discovery.find_all_paths(folder)
+    # all_files=True : vidéos et images incluses, sans filtre d'extension
+    files, dirs = discovery.find_all_paths(folder, all_files=True)
 
     lines = []
     lines.append("STRUCTURE DU PROJET")
@@ -24,8 +27,26 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
 
     # Icônes par extension
     icon_map = {
+        # Code
         '.py': "🐍", '.json': "📄", '.txt': "📝", '.po': "🌐",
-        '.mo': "📦", '.html': "🌍", '.htm': "🌍", '.css': "🎨", '.js': "⚡"
+        '.mo': "📦", '.html': "🌍", '.htm': "🌍", '.css': "🎨", '.js': "⚡",
+        # Images
+        '.png': "🖼️", '.jpg': "🖼️", '.jpeg': "🖼️", '.gif': "🖼️",
+        '.bmp': "🖼️", '.webp': "🖼️", '.tiff': "🖼️", '.ico': "🖼️",
+        '.svg': "🎨",
+        # Vidéos
+        '.mp4': "🎬", '.avi': "🎬", '.mkv': "🎬", '.mov': "🎬",
+        '.webm': "🎬", '.wmv': "🎬", '.flv': "🎬", '.m4v': "🎬",
+        '.mpg': "🎬", '.mpeg': "🎬",
+        # Audio
+        '.mp3': "🎵", '.wav': "🎵", '.ogg': "🎵", '.flac': "🎵",
+        '.m4a': "🎵", '.aac': "🎵",
+        # Documents
+        '.pdf': "📕", '.doc': "📘", '.docx': "📘", '.xls': "📗",
+        '.xlsx': "📗", '.ppt': "📙", '.pptx': "📙",
+        # Archives
+        '.zip': "🗜️", '.rar': "🗜️", '.7z': "🗜️", '.tar': "🗜️",
+        '.gz': "🗜️", '.bz2': "🗜️",
     }
 
     # Construire l'arbre complet (dossiers + fichiers) trié
@@ -36,7 +57,10 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
     # Ajouter les dossiers
     for d in sorted(dirs):
         parent = d.parent
-        tree[str(parent)]['dirs'].append(d.name)
+        parent_str = str(parent)
+        if parent_str == '.':
+            parent_str = ''
+        tree[parent_str]['dirs'].append(d.name)
 
     # Ajouter les fichiers
     for full_path, rel_path, ext in files:
