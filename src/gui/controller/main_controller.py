@@ -3,6 +3,7 @@
 Contrôleur principal qui compose tous les sous-contrôleurs.
 Utilise la composition plutôt que l'héritage pour combiner les fonctionnalités.
 """
+from __future__ import annotations
 from .base_controller import BaseController
 from .folder_controller import FolderController
 from .extraction_controller import ExtractionController

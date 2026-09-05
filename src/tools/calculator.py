@@ -21,13 +21,14 @@ def build_calculator_view(shell) -> ttk.Frame:
 
 TOOL = Tool(
     id='calculator',
-    name="Calculatrice",
-    description="Calculatrice simple et sécurisée.",
-    category="Utilitaires",
-    icon='🧮',
+    name="Cerveau",
+    description="Calculatrice scientifique et conversion d'unités.",
+    category="Système",
+    icon='🧠',
     shortcut='Ctrl+4',
     view=build_calculator_view,
-    keywords=('calcul', 'calculator', 'math', 'calculette'),
+    keywords=('calcul', 'calculator', 'math', 'calculette', 'cerveau', 'scientifique'),
+    order=1,
 )
 
 
@@ -35,10 +36,10 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='tool.calculator',
-        label="Calculatrice",
-        description="Calculatrice simple et sécurisée",
+        label="Cerveau",
+        description="Calculatrice scientifique et conversion d'unités",
         shortcut='Ctrl+4',
-        icon='🧮',
+        icon='🧠',
         tool_id='calculator',
-        keywords=('calcul', 'calculator', 'math'),
+        keywords=('calcul', 'calculator', 'math', 'cerveau', 'scientifique'),
     ))

@@ -1,4 +1,5 @@
 # src/gui/controller/navigation_controller.py
+from __future__ import annotations
 from .base_controller import BaseController
 from ..errors import show_error
 from src.i18n import _

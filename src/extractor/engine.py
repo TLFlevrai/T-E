@@ -1,5 +1,5 @@
 # src/extractor/engine.py
-from pathlib import Path
+from __future__ import annotations
 from typing import Optional, Callable
 from src.extractor.file_discovery import FileDiscoveryService
 from src.extractor.structure_generator import generate_project_structure
@@ -72,11 +72,11 @@ class ExtractionEngine:
                 self._cleanup_partial_output(output_path)
                 return CANCELLED
 
-            logger.info(f"Extraction terminée avec succès : {output_path}")
+            logger.info("Extraction terminée avec succès : %s", output_path)
             return SUCCESS
 
         except Exception as e:
-            logger.error(f"Erreur lors de l'extraction globale : {e}")
+            logger.error("Erreur lors de l'extraction globale : %s", e)
             self._log(f"Erreur critique : {e}", log_callback)
             return FAILED
 
@@ -85,9 +85,9 @@ class ExtractionEngine:
         try:
             if output_path.exists():
                 output_path.unlink()
-                logger.info(f"Fichier partiel supprimé après annulation : {output_path}")
+                logger.info("Fichier partiel supprimé après annulation : %s", output_path)
         except Exception as e:
-            logger.warning(f"Impossible de supprimer le fichier partiel : {e}")
+            logger.warning("Impossible de supprimer le fichier partiel : %s", e)
 
     # --- Sous-étapes de l'extraction ---
 

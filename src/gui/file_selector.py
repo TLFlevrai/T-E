@@ -1,4 +1,5 @@
 # src/gui/file_selector.py
+from __future__ import annotations
 from src.gui.selection import SelectionDialog
 
 def select_files(parent, folder_path, options):

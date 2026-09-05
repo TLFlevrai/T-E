@@ -1,4 +1,5 @@
 # src/gui/selection/utils.py
+from __future__ import annotations
 from src.utils import human_size
 
 def get_allowed_extensions(options):

@@ -1,10 +1,14 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "te"
 version = "2.0.0"
 description = "TE : toolkit desktop multi-outils (extraction, conversion, vidéo, calculatrice, réseau, versions)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "GPL-3.0-or-later"}
 authors = [
     {name = "TLF", email = "tlf@example.com"}
 ]
@@ -12,7 +16,7 @@ keywords = ["toolkit", "gui", "tkinter", "i18n", "network", "extractor", "conver
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -25,12 +29,17 @@ dependencies = [
     "pydantic>=2.0",
     "fpdf2>=2.7",
     "pillow>=10.0",
-    "ttkbootstrap>=1.10",
     "resvg-py>=0.4",
-    "yt-dlp>=2024.1.0",
+    "yt-dlp>=2024.0",
+    "PyPDF2>=3.0",
+    "pydub>=0.25",
+    "chardet>=5.0",
 ]
 
 [project.optional-dependencies]
+premium = [
+    "ttkbootstrap>=1.10",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov",

@@ -1,5 +1,6 @@
 # src/gui/base_dialog.py
 """Classe de base pour les fenêtres de dialogue (Toplevel)."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 from typing import Optional

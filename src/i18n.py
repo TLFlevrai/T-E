@@ -151,7 +151,7 @@ def _build_context_catalog(locale_dir: Path, lang: str) -> dict:
                 catalog[(context, msgid)] = msgstr
 
     except Exception as e:
-        logger.warning(f"Erreur lors du chargement du catalogue de contexte pour {lang} : {e}")
+        logger.warning("Erreur lors du chargement du catalogue de contexte pour %s : %s", lang, e)
 
     return catalog
 
@@ -174,10 +174,10 @@ def setup_i18n():
         _.set_translation(translation.gettext)
         # Charge le catalogue de contexte
         _.set_context_catalog(_build_context_catalog(locale_dir, lang))
-        logger.info(f"Traduction chargee pour la langue '{lang}'")
+        logger.info("Traduction chargee pour la langue '%s'", lang)
     except Exception as e:
         logger.warning(
-            f"Traduction non disponible pour '{lang}', utilisation du fallback : {e}"
+            "Traduction non disponible pour '%s', utilisation du fallback : %s", lang, e
         )
         # Installe le fallback
         gettext.install('messages', names=('ngettext',))
@@ -197,7 +197,7 @@ def reload_translations():
         try:
             callback()
         except Exception as e:
-            logger.error(f"Erreur dans callback de rechargement i18n : {e}")
+            logger.error("Erreur dans callback de rechargement i18n : %s", e)
 
 
 def register_reload_callback(callback: callable):
@@ -236,8 +236,8 @@ def change_language(lang_code: str):
 
         # Recharger les traductions
         reload_translations()
-        logger.info(f"Langue changee vers '{lang_code}'")
+        logger.info("Langue changee vers '%s'", lang_code)
         return True
     except Exception as e:
-        logger.error(f"Impossible de changer la langue : {e}")
+        logger.error("Impossible de changer la langue : %s", e)
         return False

@@ -1,4 +1,5 @@
 # src/services/pdf_service.py
+from __future__ import annotations
 import os
 import re
 from pathlib import Path
@@ -27,7 +28,7 @@ class PDFService:
             with open(txt_path, 'r', encoding='utf-8') as f:
                 content = f.read()
         except Exception as e:
-            logger.error(f"Erreur lors de la lecture du fichier texte : {e}")
+            logger.error("Erreur lors de la lecture du fichier texte : %s", e)
             raise
 
         # Nettoyer le contenu : remplacer les emojis et caractères non-latin1
@@ -64,7 +65,7 @@ class PDFService:
 
         # Écriture sécurisée : le chemin a déjà été validé
         pdf.output(str(pdf_path))
-        logger.info(f"PDF généré : {pdf_path}")
+        logger.info("PDF généré : %s", pdf_path)
         return pdf_path
 
     @staticmethod

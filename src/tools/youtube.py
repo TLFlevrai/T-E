@@ -1,14 +1,8 @@
 # src/tools/youtube.py
-"""Outil YouTube : téléchargement de vidéos (MP4) ou d'audio (MP3).
-
-L'utilisateur choisit le format (vidéo ou audio) avant le lancement du
-téléchargement. Le téléchargement s'exécute dans un thread de travail et
-met à jour la barre de progression via `safe_after` (thread-safe).
-"""
+"""Outil YouTube : téléchargement de vidéos (MP4) ou d'audio (MP3)."""
 from __future__ import annotations
 
 import os
-import shutil
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -21,11 +15,7 @@ from src.gui.app_guard import safe_after
 from src.i18n import _
 
 _VIDEO_QUALITIES = [
-    ("Meilleure qualité", None),
-    ("2160p (4K)", 2160),
-    ("1080p", 1080),
-    ("720p", 720),
-    ("480p", 480),
+    ("Meilleure qualité (≤ 360p)", 360),
     ("360p", 360),
 ]
 
@@ -36,7 +26,6 @@ def build_youtube_view(shell) -> ttk.Frame:
 
     frame = ttk.Frame(shell.workspace, padding=12)
 
-    # --- URL ---
     ttk.Label(frame, text=_("URL de la vidéo YouTube")).grid(
         row=0, column=0, sticky=tk.W, pady=(0, 4))
     url_var = tk.StringVar()
@@ -44,7 +33,6 @@ def build_youtube_view(shell) -> ttk.Frame:
     url_entry.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 8))
     add_tooltip(url_entry, _("Collez l'URL d'une vidéo YouTube puis choisissez le format."))
 
-    # --- Format ---
     ttk.Label(frame, text=_("Format de téléchargement")).grid(
         row=2, column=0, sticky=tk.W, pady=(0, 4))
     format_var = tk.StringVar(value='video')
@@ -56,7 +44,6 @@ def build_youtube_view(shell) -> ttk.Frame:
     ttk.Radiobutton(radio_frame, text=_("Audio (MP3)"), value='audio',
                     variable=format_var).pack(side=tk.LEFT)
 
-    # --- Qualité vidéo ---
     ttk.Label(frame, text=_("Qualité vidéo")).grid(
         row=4, column=0, sticky=tk.W, pady=(0, 4))
     quality_var = tk.StringVar(value=_VIDEO_QUALITIES[0][0])
@@ -70,7 +57,6 @@ def build_youtube_view(shell) -> ttk.Frame:
         quality_combo.config(state=state)
     format_var.trace_add('write', _on_format_change)
 
-    # --- Destination ---
     ttk.Label(frame, text=_("Dossier de destination")).grid(
         row=6, column=0, sticky=tk.W, pady=(0, 4))
     dest_var = tk.StringVar(value=_default_dest())
@@ -83,7 +69,6 @@ def build_youtube_view(shell) -> ttk.Frame:
     ttk.Button(dest_buttons, text=_("Ouvrir le dossier"),
                command=lambda: _open_dest(dest_var.get())).pack(side=tk.LEFT)
 
-    # --- Actions ---
     progress = ttk.Progressbar(frame, mode='determinate', maximum=100)
     progress.grid(row=9, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 6))
     status_var = tk.StringVar(value="")
@@ -129,7 +114,7 @@ def _open_dest(path: str) -> None:
         messagebox.showinfo(_("Dossier"), _("Le dossier n'existe pas encore."))
         return
     try:
-        os.startfile(path)  # noqa: S606
+        os.startfile(path)
     except OSError:
         pass
 
@@ -160,8 +145,6 @@ class _YouTubeView:
             self._set_status(_("URL invalide : elle doit commencer par http(s)://"))
             return
 
-        # Snapshot des options ICI (thread UI) : les tk.StringVar ne doivent
-        # jamais être lues depuis le thread de travail.
         opts = self._build_opts()
 
         self.progress.config(value=0)
@@ -171,94 +154,78 @@ class _YouTubeView:
             target=self._run, args=(url, opts), daemon=True)
         self._thread.start()
 
-    # --- Thread de travail ---
+    def _build_opts(self) -> dict:
+        quality_label = self.quality_var.get()
+        max_height = 360
+        for name, height in _VIDEO_QUALITIES:
+            if name == quality_label:
+                max_height = height or 360
+                break
+
+        return {
+            'format': self.format_var.get(),
+            'dest': self.dest_var.get(),
+            'max_height': max_height,
+        }
 
     def _run(self, url: str, opts: dict) -> None:
-        try:
-            from yt_dlp import YoutubeDL
-        except ImportError:
-            self._post(lambda: self._fail(_(
-                "yt-dlp n'est pas installé. Lancez : pip install yt-dlp")))
-            return
+        from src.youtube import (
+            download_audio,
+            download_video,
+            FormatUnavailableError,
+            InvalidYouTubeURLError,
+            NetworkError,
+            VideoUnavailableError,
+            YouTubeError,
+        )
 
         try:
-            with YoutubeDL(opts) as ydl:
-                self._post(lambda: self._set_status(_("Récupération des informations...")))
-                ydl.download([url])
+            self._post(lambda: self._set_status(_("Récupération des informations...")))
+            dest = opts['dest']
+            fmt = opts['format']
+            max_height = opts.get('max_height', 360)
+
+            def _progress(downloaded: int, total: int, _speed: int) -> None:
+                if total > 0:
+                    percent = min(100.0, downloaded / total * 100.0)
+                    self._post(lambda p=percent: self._update_progress(
+                        p, _("Téléchargement : {p:.0f}%").format(p=p)))
+                else:
+                    self._post(lambda: self._set_status(
+                        _("Téléchargement en cours...")))
+
+            if fmt == 'audio':
+                download_audio(
+                    url=url,
+                    output_dir=dest,
+                    convert_mp3=True,
+                    progress_cb=_progress,
+                )
+            else:
+                download_video(
+                    url=url,
+                    output_dir=dest,
+                    max_height=max_height,
+                    progress_cb=_progress,
+                )
+
             self._post(self._on_done)
-        except Exception as exc:  # noqa: BLE001 - erreur utilisateur lisible
+
+        except InvalidYouTubeURLError as exc:
             self._post(lambda err=exc: self._fail(str(err)))
-
-    def _build_opts(self) -> dict:
-        quality = self._selected_quality()
-        ffmpeg = shutil.which('ffmpeg') is not None
-        if self.format_var.get() == 'audio':
-            if ffmpeg:
-                return {
-                    'format': 'bestaudio/best',
-                    'outtmpl': os.path.join(self.dest_var.get(), '%(title)s.%(ext)s'),
-                    'postprocessors': [{
-                        'key': 'FFmpegExtractAudio',
-                        'preferredcodec': 'mp3',
-                        'preferredquality': '192',
-                    }],
-                    'progress_hooks': [self._hook],
-                    'noplaylist': True,
-                }
-            # Sans ffmpeg : audio natif (m4a/webm/opus)
-            return {
-                'format': 'bestaudio/best',
-                'outtmpl': os.path.join(self.dest_var.get(), '%(title)s.%(ext)s'),
-                'progress_hooks': [self._hook],
-                'noplaylist': True,
-            }
-        # Vidéo MP4
-        fmt = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
-        if quality:
-            fmt = (f'bestvideo[height<={quality}][ext=mp4]'
-                   f'+bestaudio[ext=m4a]/best[height<={quality}][ext=mp4]'
-                   f'/best[height<={quality}]')
-        opts = {
-            'format': fmt,
-            'outtmpl': os.path.join(self.dest_var.get(), '%(title)s.%(ext)s'),
-            'merge_output_format': 'mp4',
-            'progress_hooks': [self._hook],
-            'noplaylist': True,
-        }
-        if not ffmpeg:
-            opts.pop('merge_output_format', None)
-        return opts
-
-    def _selected_quality(self) -> int | None:
-        label = self.quality_var.get()
-        for name, height in _VIDEO_QUALITIES:
-            if name == label:
-                return height
-        return None
-
-    # --- Hooks ---
-
-    def _hook(self, d: dict) -> None:
-        status = d.get('status')
-        if status == 'downloading':
-            total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
-            done = d.get('downloaded_bytes') or 0
-            percent = min(100.0, (done / total * 100.0)) if total else 0.0
-            speed = d.get('speed')
-            eta = d.get('eta')
-            text = _("Téléchargement : {percent:.0f}%").format(percent=percent)
-            if speed:
-                text += " — " + _("{speed} Mo/s").format(speed=speed / 1_000_000)
-            if eta:
-                text += " — " + _("{eta} s restantes").format(eta=int(eta))
-            self._post(lambda: self._update_progress(percent, text))
-        elif status == 'finished':
-            self._post(lambda: self._set_status(_("Finalisation du fichier...")))
+        except VideoUnavailableError as exc:
+            self._post(lambda err=exc: self._fail(str(err)))
+        except FormatUnavailableError as exc:
+            self._post(lambda err=exc: self._fail(str(err)))
+        except NetworkError as exc:
+            self._post(lambda err=exc: self._fail(str(err)))
+        except YouTubeError as exc:
+            self._post(lambda err=exc: self._fail(str(err)))
+        except Exception as exc:
+            self._post(lambda err=exc: self._fail(str(err)))
 
     def _post(self, callback) -> None:
         safe_after(self.shell.root, 0, callback)
-
-    # --- Callbacks UI (thread principal) ---
 
     def _update_progress(self, percent: float, text: str) -> None:
         self.progress.config(value=percent)
@@ -284,13 +251,14 @@ class _YouTubeView:
 
 TOOL = Tool(
     id='youtube',
-    name="YouTube",
-    description="Télécharger des vidéos YouTube (MP4 ou MP3).",
-    category="Réseau",
-    icon='▶️',
+    name="TéléScope",
+    description="Captandez des vidéos YouTube (MP4) ou extrayez l'audio (MP3).",
+    category="Conversion",
+    icon='🔭',
     shortcut='Ctrl+9',
     view=build_youtube_view,
     keywords=('youtube', 'video', 'audio', 'mp3', 'mp4', 'téléchargement', 'download'),
+    order=2,
 )
 
 
@@ -298,10 +266,10 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='tool.youtube',
-        label="YouTube",
-        description="Télécharger des vidéos YouTube (MP4 ou MP3)",
+        label="TéléScope",
+        description="Captader des vidéos YouTube (MP4 ou MP3)",
         shortcut='Ctrl+9',
-        icon='▶️',
+        icon='🔭',
         tool_id='youtube',
         keywords=('youtube', 'video', 'audio', 'mp3', 'mp4', 'download'),
     ))

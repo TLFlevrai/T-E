@@ -3,6 +3,7 @@
 Améliorations de rendu : High-DPI, police moderne, thème ttkbootstrap.
 Chaque fonction est un "best effort" : si une étape échoue, on continue.
 """
+from __future__ import annotations
 import sys
 import tkinter as tk
 import tkinter.font as tkfont
@@ -57,7 +58,7 @@ def setup_default_font(root: tk.Tk):
                     try:
                         tkfont.nametofont(name).configure(family=family, size=10)
                     except Exception:
-                        pass
+                        logger.debug("Échec de configuration de la police Tk secondaire", exc_info=True)
                 return
         except Exception:
             continue

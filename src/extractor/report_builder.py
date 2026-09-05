@@ -1,7 +1,6 @@
 # src/extractor/report_builder.py
-from pathlib import Path
+from __future__ import annotations
 from src.extractor.stats_writer import write_statistics_section
-from src.utils import human_size
 
 class ReportBuilder:
     def __init__(self, context):

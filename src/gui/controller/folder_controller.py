@@ -1,4 +1,5 @@
 # src/gui/controller/folder_controller.py
+from __future__ import annotations
 import os
 from tkinter import filedialog
 from .base_controller import BaseController
@@ -6,6 +7,9 @@ from ..errors import show_error
 from src.gui.folder_scanner import scan_folder
 from src.gui.recent_files import add_recent_folder, remove_recent_folder
 from src.i18n import _
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class FolderController(BaseController):
     """Gestion du dossier sélectionné et des emplacements récents."""
@@ -47,9 +51,7 @@ class FolderController(BaseController):
             from src.config import get_config
             get_config().update_gui(last_folder=folder)
         except Exception:
-            pass
-
-    def _log_folder_stats(self):
+            logger.debug("Erreur lors de la sauvegarde du dernier dossier", exc_info=True)
         """Affiche les statistiques du dossier dans le journal."""
         self.add_info(_("Dossier sélectionné : {}").format(self._selected_folder))
 

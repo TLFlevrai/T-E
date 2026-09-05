@@ -1,10 +1,13 @@
 # src/gui/toast.py
 """Notifications non-bloquantes en bas de fenêtre (toasts)."""
+from __future__ import annotations
 import tkinter as tk
-from tkinter import ttk
 from typing import Optional
 
 from src.i18n import _
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 # Types de toast -> couleurs
 _TYPE_COLORS = {
@@ -30,8 +33,8 @@ def show_toast(
     """
     try:
         _Toast(root, message, type_, duration_ms, parent)
-    except Exception:
-        pass  # Ne doit jamais faire tomber l'app
+    except Exception as exc:
+        logger.debug("Erreur affichage toast : %s", exc)
 
 
 class _Toast:
@@ -112,5 +115,5 @@ class _Toast:
             self.win.destroy()
             # Ré-aligner les toasts restants
             self._reposition_all()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Erreur fermeture toast : %s", exc)

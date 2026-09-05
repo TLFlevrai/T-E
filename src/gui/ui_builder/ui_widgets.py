@@ -1,4 +1,5 @@
 # src/gui/ui_builder/ui_widgets.py
+from __future__ import annotations
 """Type-safe UI widgets container using dataclasses."""
 from dataclasses import dataclass, field
 from typing import Optional, Callable

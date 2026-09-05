@@ -1,4 +1,5 @@
 # src/extractor/__init__.py
+from __future__ import annotations
 from .engine import ExtractionEngine
 from .extractor import CodeExtractor
 from .file_discovery import FileDiscoveryService

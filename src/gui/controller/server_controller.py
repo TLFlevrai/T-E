@@ -1,4 +1,5 @@
 # src/gui/controller/server_controller.py
+from __future__ import annotations
 from .base_controller import BaseController
 from src.logger import setup_logger
 

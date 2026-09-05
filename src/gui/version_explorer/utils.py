@@ -1,7 +1,11 @@
 # src/gui/version_explorer/utils.py
+from __future__ import annotations
 import re
 from pathlib import Path
 from src.utils import human_size
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def parse_date_from_header(file_path: Path) -> str:
@@ -14,7 +18,7 @@ def parse_date_from_header(file_path: Path) -> str:
                     if len(parts) == 2:
                         return parts[1].strip()
     except Exception:
-        pass
+        logger.debug("Erreur lors de la lecture de la date d'extraction", exc_info=True)
     return ""
 
 
@@ -52,5 +56,5 @@ def get_file_stats(file_path: Path) -> dict:
                 else:
                     stats['total_size'] = int(val)
     except Exception:
-        pass
+        logger.debug("Erreur lors de l'extraction des statistiques du fichier", exc_info=True)
     return stats

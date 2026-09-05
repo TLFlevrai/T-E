@@ -1,4 +1,5 @@
 # src/gui/extraction_runner.py
+from __future__ import annotations
 import os
 import time
 from pathlib import Path
@@ -152,7 +153,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
                 post(lambda: controller.add_info(_("PDF généré : {}").format(pdf_path)))
                 post(lambda: controller.add_info(_("Emplacement : {}").format(os.path.abspath(pdf_path))))
             except Exception as e:
-                logger.error(f"Erreur lors de la génération du PDF : {e}")
+                logger.error("Erreur lors de la génération du PDF : %s", e)
                 post(lambda e=e: controller.add_info(_("Erreur de génération du PDF : {}").format(e)))
 
         # Message de succès (inclut le PDF si généré)
@@ -178,13 +179,13 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             try:
                 show_toast(controller.root, _("Extraction terminée avec succès"), 'success')
             except Exception:
-                pass
+                logger.debug("Erreur lors de l'affichage du toast de succès", exc_info=True)
             show_info(_("Succès"), success_msg, parent=controller.root)
         post(_show_success)
         return True, output_filename, stats
 
     except Exception as e:
-        logger.error(f"Erreur lors de l'extraction : {e}")
+        logger.error("Erreur lors de l'extraction : %s", e)
         post(lambda: controller.ui.status_var.set(_("Extraction échouée")))
         post(lambda: controller.ui.progress_var.set(0))
         post(lambda e=e: show_error(

@@ -1,4 +1,5 @@
 # src/services/version_service.py
+from __future__ import annotations
 import re
 import shutil
 from dataclasses import dataclass
@@ -105,7 +106,7 @@ class VersionArchiveService:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read(4096)  # lire les premiers 4K pour l'en-tête et les stats
         except Exception as e:
-            logger.warning(f"Impossible de lire {file_path} pour les métadonnées : {e}")
+            logger.warning("Impossible de lire %s pour les métadonnées : %s", file_path, e)
             return result
 
         # Extraction de la date
@@ -148,7 +149,7 @@ class VersionArchiveService:
                 counter += 1
 
         shutil.move(str(entry.path), str(dest_path))
-        logger.info(f"Version archivée : {entry.path} -> {dest_path}")
+        logger.info("Version archivée : %s -> %s", entry.path, dest_path)
         return dest_path
 
     def restore(self, entry: VersionEntry) -> Path:
@@ -176,23 +177,23 @@ class VersionArchiveService:
                     counter += 1
 
         shutil.move(str(entry.path), str(dest_path))
-        logger.info(f"Version restaurée : {entry.path} -> {dest_path}")
+        logger.info("Version restaurée : %s -> %s", entry.path, dest_path)
         return dest_path
 
     def delete(self, entry: VersionEntry) -> None:
         """Supprime définitivement le fichier de version."""
         if not entry.path.exists():
-            logger.warning(f"Le fichier {entry.path} n'existe plus, suppression ignorée.")
+            logger.warning("Le fichier %s n'existe plus, suppression ignorée.", entry.path)
             return
         entry.path.unlink()
-        logger.info(f"Version supprimée : {entry.path}")
+        logger.info("Version supprimée : %s", entry.path)
 
     def reset_project(self, project_name: str) -> None:
         """
         Réinitialise le compteur de version pour un projet donné.
         """
         self.version_manager.reset_project(project_name)
-        logger.info(f"Compteur réinitialisé pour le projet '{project_name}'")
+        logger.info("Compteur réinitialisé pour le projet '%s'", project_name)
 
     def reset_all(self) -> None:
         """Réinitialise tous les compteurs."""
@@ -212,6 +213,6 @@ class VersionArchiveService:
                         file_path.unlink()
                         count += 1
                     except Exception as e:
-                        logger.error(f"Impossible de supprimer {file_path} : {e}")
-        logger.info(f"Nettoyage complet : {count} fichier(s) supprimé(s)")
+                        logger.error("Impossible de supprimer %s : %s", file_path, e)
+        logger.info("Nettoyage complet : %d fichier(s) supprimé(s)", count)
         return count

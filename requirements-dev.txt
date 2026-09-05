@@ -1,0 +1,3 @@
+# Dev dependencies - install with: pip install -r requirements-dev.txt
+-r requirements.txt
+-e .[dev,test,premium]

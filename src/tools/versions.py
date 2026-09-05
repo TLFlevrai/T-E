@@ -13,13 +13,14 @@ def _open_versions(shell) -> None:
 
 TOOL = Tool(
     id='versions',
-    name="Versions",
-    description="Gérer les versions d'export des projets.",
-    category="Données",
-    icon='🗂️',
+    name="Chronologie",
+    description="Naviguez dans l'historique des versions d'export.",
+    category="Extraction",
+    icon='⏳',
     shortcut='Ctrl+6',
     open=_open_versions,
-    keywords=('versions', 'archive', 'restaurer', 'history', 'backup'),
+    keywords=('versions', 'archive', 'restaurer', 'history', 'backup', 'chronologie'),
+    order=3,
 )
 
 
@@ -27,10 +28,10 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='tool.versions',
-        label="Versions",
+        label="Chronologie",
         description="Ouvrir le gestionnaire de versions d'export",
         shortcut='Ctrl+6',
-        icon='🗂️',
+        icon='⏳',
         tool_id='versions',
-        keywords=('versions', 'archive', 'restaurer', 'history'),
+        keywords=('versions', 'archive', 'restaurer', 'history', 'chronologie'),
     ))

@@ -149,13 +149,14 @@ def _save(adapter) -> None:
 
 TOOL = Tool(
     id='settings',
-    name="Paramètres",
-    description="Configurer TE : langue, thème, formats, sortie.",
-    category="Personnalisation",
-    icon='⚙️',
+    name="Arrière-boutique",
+    description="Configurez TE : langue, thème, formats, sortie.",
+    category="Système",
+    icon='🔧',
     shortcut='Ctrl+8',
     view=build_settings_view,
-    keywords=('parametres', 'settings', 'configuration', 'options', 'preferences'),
+    keywords=('parametres', 'settings', 'configuration', 'options', 'preferences', 'boutique'),
+    order=3,
 )
 
 
@@ -163,10 +164,10 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='tool.settings',
-        label="Paramètres",
+        label="Arrière-boutique",
         description="Configurer TE : langue, thème, formats, sortie",
         shortcut='Ctrl+8',
-        icon='⚙️',
+        icon='🔧',
         tool_id='settings',
-        keywords=('parametres', 'settings', 'configuration', 'options'),
+        keywords=('parametres', 'settings', 'configuration', 'options', 'boutique'),
     ))

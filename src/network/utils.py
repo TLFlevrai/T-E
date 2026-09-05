@@ -1,4 +1,5 @@
 # src/network/utils.py
+from __future__ import annotations
 import socket
 
 def get_local_ip() -> str:

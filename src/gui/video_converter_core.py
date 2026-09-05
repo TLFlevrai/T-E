@@ -1,5 +1,6 @@
 # src/gui/video_converter_core.py
 """Logique centrale de conversion vidéo vers MP3 (sans UI)."""
+from __future__ import annotations
 from pathlib import Path
 import subprocess
 import threading
@@ -105,7 +106,7 @@ class VideoConverterCore:
         def run_conversion():
             try:
                 cmd = self.build_ffmpeg_command(input_path, output_path, options)
-                logger.info(f"Commande ffmpeg : {' '.join(cmd)}")
+                logger.info("Commande ffmpeg : %s", ' '.join(cmd))
                 
                 self._process = subprocess.Popen(
                     cmd,
@@ -139,12 +140,12 @@ class VideoConverterCore:
                         on_complete(True, None)
                 else:
                     stderr_output = self._process.stderr.read()
-                    logger.error(f"Erreur ffmpeg : {stderr_output}")
+                    logger.error("Erreur ffmpeg : %s", stderr_output)
                     if on_complete:
                         on_complete(False, stderr_output or "Erreur inconnue")
             
             except Exception as e:
-                logger.error(f"Erreur lors de la conversion : {e}")
+                logger.error("Erreur lors de la conversion : %s", e)
                 if on_complete:
                     on_complete(False, str(e))
             finally:
@@ -161,7 +162,7 @@ class VideoConverterCore:
             try:
                 self._process.terminate()
             except Exception:
-                pass
+                logger.warning("Échec de l'arrêt du processus ffmpeg", exc_info=True)
     
     def is_running(self) -> bool:
         """Vérifie si une conversion est en cours."""

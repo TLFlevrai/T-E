@@ -1,8 +1,8 @@
 # src/gui/crash_report.py
 """Dialogue propre de signalement d'erreur en cas de crash."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
-import traceback
 
 from src.i18n import _
 from src.logger import setup_logger
@@ -22,7 +22,7 @@ def show_crash_dialog(root: tk.Tk, details: str):
                 _("Une erreur inattendue est survenue. Consultez les logs.")
             )
         except Exception:
-            pass
+            logger.debug("Erreur lors de l'affichage du messagebox de secours", exc_info=True)
 
 
 class _CrashDialog(tk.Toplevel):

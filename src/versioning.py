@@ -22,7 +22,7 @@ class VersionManager:
                             folder, ver = line.split(":", 1)
                             mapping[folder] = int(ver)
             except (IOError, OSError, ValueError) as e:
-                logger.error(f"Erreur lors du chargement du fichier de versions : {e}")
+                logger.error("Erreur lors du chargement du fichier de versions : %s", e)
                 mapping = {}
         return mapping
 
@@ -35,7 +35,7 @@ class VersionManager:
                     f.write(f"{folder}:{ver}\n")
             tmp_file.replace(self.version_file)
         except (IOError, OSError) as e:
-            logger.error(f"Erreur lors de la sauvegarde du fichier de versions : {e}")
+            logger.error("Erreur lors de la sauvegarde du fichier de versions : %s", e)
 
     def get_next_version(self, folder_name, output_dir="."):
         with self._lock:
@@ -62,7 +62,7 @@ class VersionManager:
                     f.write(f"{folder}:{ver}\n")
             tmp_file.replace(self.version_file)
         except (IOError, OSError) as e:
-            logger.error(f"Erreur lors de la sauvegarde du fichier de versions : {e}")
+            logger.error("Erreur lors de la sauvegarde du fichier de versions : %s", e)
 
     # On garde save_mapping pour d'autres usages éventuels, mais on le réécrit
     # pour qu'il utilise le verrou (appel externe)
@@ -78,7 +78,7 @@ class VersionManager:
                     self.version_file.unlink()
                     logger.info("Fichier de versions supprimé.")
                 except (IOError, OSError) as e:
-                    logger.error(f"Erreur lors de la suppression du fichier de versions : {e}")
+                    logger.error("Erreur lors de la suppression du fichier de versions : %s", e)
 
     def reset_project(self, folder_name):
         """Réinitialise le compteur pour un projet spécifique."""
@@ -86,7 +86,7 @@ class VersionManager:
             if folder_name in self.mapping:
                 del self.mapping[folder_name]
                 self._save_mapping_locked()
-                logger.info(f"Compteur réinitialisé pour {folder_name}")
+                logger.info("Compteur réinitialisé pour %s", folder_name)
 
     # Anciennes méthodes conservées pour compatibilité
     def load_version(self):

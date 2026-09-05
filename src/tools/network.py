@@ -24,13 +24,14 @@ def _open_network(shell) -> None:
 
 TOOL = Tool(
     id='network',
-    name="Réseau",
-    description="Envoyer et recevoir des fichiers sur le réseau.",
-    category="Réseau",
-    icon='🌐',
+    name="Nexus",
+    description="Transférez des fichiers sur le réseau local.",
+    category="Système",
+    icon='🔗',
     shortcut='Ctrl+5',
     open=_open_network,
-    keywords=('reseau', 'network', 'transfert', 'fichiers', 'transfer', 'wifi'),
+    keywords=('reseau', 'network', 'transfert', 'fichiers', 'transfer', 'wifi', 'nexus'),
+    order=2,
 )
 
 
@@ -38,10 +39,10 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='tool.network',
-        label="Réseau",
+        label="Nexus",
         description="Ouvrir le centre réseau",
         shortcut='Ctrl+5',
-        icon='🌐',
+        icon='🔗',
         tool_id='network',
-        keywords=('reseau', 'network', 'transfert', 'transfer'),
+        keywords=('reseau', 'network', 'transfert', 'transfer', 'nexus'),
     ))

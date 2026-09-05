@@ -74,14 +74,15 @@ def _cmd_clear_log(shell) -> None:
 
 TOOL = Tool(
     id='extract',
-    name="Extraction",
-    description="Extraire le code et la structure d'un projet.",
-    category="Principal",
-    icon='📁',
+    name="Archiviste",
+    description="Extrayez et archivez le code de vos projets.",
+    category="Extraction",
+    icon='📦',
     shortcut='Ctrl+1',
     view=build_extract_view,
     commands=('extract.run', 'extract.browse', 'extract.clear_log'),
-    keywords=('code', 'projet', 'project', 'structure', 'extraire', 'export'),
+    keywords=('code', 'projet', 'project', 'structure', 'extraire', 'export', 'archive'),
+    order=1,
 )
 
 
@@ -89,12 +90,12 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='extract.run',
-        label="Extraire le code",
+        label="Archiviste",
         description="Lancer l'extraction du code du projet sélectionné",
         shortcut='Ctrl+E',
-        icon='📁',
+        icon='📦',
         tool_id='extract',
-        keywords=('extraire', 'extraction', 'extract', 'lancer'),
+        keywords=('extraire', 'extraction', 'extract', 'lancer', 'archiver'),
         handler=_cmd_extract,
     ))
     cmds.register(Command(

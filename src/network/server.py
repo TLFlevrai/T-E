@@ -1,4 +1,5 @@
 # src/network/server.py
+from __future__ import annotations
 import socket
 import threading
 import re
@@ -89,7 +90,7 @@ class ReceiveServer(threading.Thread):
             try:
                 cb(event_type, data)
             except Exception as e:
-                logger.error(f"Erreur dans un observateur : {e}")
+                logger.error("Erreur dans un observateur : %s", e)
 
     @staticmethod
     def _sanitize_filename(raw_filename: str) -> str:
@@ -157,7 +158,7 @@ class ReceiveServer(threading.Thread):
         try:
             self.received_dir.mkdir(parents=True, exist_ok=True)
         except OSError as e:
-            logger.error(f"Impossible de créer le dossier de réception : {e}")
+            logger.error("Impossible de créer le dossier de réception : %s", e)
             self._notify('start_failed', {'error': str(e)})
             return
 
@@ -167,10 +168,10 @@ class ReceiveServer(threading.Thread):
                 server_socket.bind((self.host, self.port))
                 server_socket.listen(5)
                 server_socket.settimeout(1.0)
-                logger.info(f"Serveur démarré sur {self.host}:{self.port} (auth={'ON' if self.auth_enabled else 'OFF'})")
+                logger.info("Serveur démarré sur %s:%s (auth=%s)", self.host, self.port, 'ON' if self.auth_enabled else 'OFF')
                 self._notify('started', {'host': self.host, 'port': self.port})
             except Exception as e:
-                logger.error(f"Impossible de démarrer le serveur : {e}")
+                logger.error("Impossible de démarrer le serveur : %s", e)
                 self._notify('start_failed', {'error': str(e)})
                 return
 
@@ -184,7 +185,7 @@ class ReceiveServer(threading.Thread):
                     # Erreur transitoire (ex: EMFILE) : on logue et on continue,
                     # sauf si le socket est fermé (arrêt volontaire).
                     accept_errors += 1
-                    logger.error(f"Erreur accept ({accept_errors}) : {e}")
+                    logger.error("Erreur accept (%d) : %s", accept_errors, e)
                     if accept_errors >= 50 or server_socket.fileno() < 0:
                         break
                     continue
@@ -198,50 +199,50 @@ class ReceiveServer(threading.Thread):
         try:
             # 1. AUTHENTIFICATION (avant tout traitement)
             if not self._verify_auth(conn):
-                logger.warning(f"Authentification échouée pour {addr}")
+                logger.warning("Authentification échouée pour %s", addr)
                 self._notify('rejected', {'reason': 'auth_failed', 'addr': addr})
                 return
 
             # 2. Lecture nom fichier
             name_size_bytes = recv_exact(conn, 4)
             if len(name_size_bytes) != 4:
-                logger.warning(f"Connexion fermée par {addr} avant le nom")
+                logger.warning("Connexion fermée par %s avant le nom", addr)
                 self._notify('rejected', {'reason': 'no_name', 'addr': addr})
                 return
             name_size = int.from_bytes(name_size_bytes, 'big')
             if name_size > 1024:
-                logger.warning(f"Nom trop long ({name_size}) de {addr}")
+                logger.warning("Nom trop long (%d) de %s", name_size, addr)
                 self._notify('rejected', {'reason': 'name_too_long', 'addr': addr})
                 return
 
             try:
                 raw_filename = recv_exact(conn, name_size).decode('utf-8')
             except UnicodeDecodeError:
-                logger.warning(f"Nom illisible (UTF-8 invalide) de {addr}")
+                logger.warning("Nom illisible (UTF-8 invalide) de %s", addr)
                 self._notify('rejected', {'reason': 'invalid_name', 'addr': addr})
                 return
 
             filename = self._sanitize_filename(raw_filename)
             if not filename:
-                logger.warning(f"Nom vide de {addr}")
+                logger.warning("Nom vide de %s", addr)
                 self._notify('rejected', {'reason': 'empty_name', 'addr': addr})
                 return
 
             ext = Path(filename).suffix.lower()
             if ext not in self.allowed_extensions:
-                logger.warning(f"Extension non autorisée '{ext}' de {addr}")
+                logger.warning("Extension non autorisée '%s' de %s", ext, addr)
                 self._notify('rejected', {'reason': 'extension_not_allowed', 'filename': filename, 'addr': addr})
                 return
 
             # 3. Taille des données
             data_size_bytes = recv_exact(conn, 8)
             if len(data_size_bytes) != 8:
-                logger.warning(f"Connexion fermée par {addr} avant la taille")
+                logger.warning("Connexion fermée par %s avant la taille", addr)
                 self._notify('rejected', {'reason': 'no_size', 'addr': addr})
                 return
             data_size = int.from_bytes(data_size_bytes, 'big')
             if data_size > self.MAX_FILE_SIZE:
-                logger.warning(f"Fichier trop gros ({data_size}) de {addr}")
+                logger.warning("Fichier trop gros (%d) de %s", data_size, addr)
                 self._notify('rejected', {'reason': 'file_too_large', 'size': data_size, 'addr': addr})
                 return
 
@@ -278,7 +279,7 @@ class ReceiveServer(threading.Thread):
                 raise
 
             if bytes_received != data_size + 32 or len(received_hash) != 32:
-                logger.error(f"Taille reçue incorrecte pour {filename} de {addr}")
+                logger.error("Taille reçue incorrecte pour %s de %s", filename, addr)
                 _silent_unlink(tmp_path)
                 self._notify('rejected', {'reason': 'incomplete', 'filename': filename, 'addr': addr})
                 return
@@ -286,7 +287,7 @@ class ReceiveServer(threading.Thread):
             # 5. Vérification hash
             computed_hash = hasher.digest()
             if not hmac.compare_digest(computed_hash, received_hash):
-                logger.error(f"Hash incorrect pour {filename} de {addr}")
+                logger.error("Hash incorrect pour %s de %s", filename, addr)
                 _silent_unlink(tmp_path)
                 self._notify('rejected', {'reason': 'hash_mismatch', 'filename': filename, 'addr': addr})
                 return
@@ -304,7 +305,7 @@ class ReceiveServer(threading.Thread):
                 _silent_unlink(tmp_path)
                 raise
 
-            logger.info(f"Fichier reçu de {addr}: {filepath} ({data_size} octets)")
+            logger.info("Fichier reçu de %s: %s (%d octets)", addr, filepath, data_size)
             self._notify('file_received', {
                 'filename': filename,
                 'path': str(filepath),
@@ -313,7 +314,7 @@ class ReceiveServer(threading.Thread):
             })
 
         except Exception as e:
-            logger.error(f"Erreur inattendue avec {addr} : {e}")
+            logger.error("Erreur inattendue avec %s : %s", addr, e)
             self._notify('rejected', {'reason': 'exception', 'error': str(e), 'addr': addr})
         finally:
             try:

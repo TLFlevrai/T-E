@@ -31,14 +31,15 @@ TE est une application tout-en-un conçue pour les développeurs. Elle offre une
 | Raccourci | Outil | Description |
 |-----------|-------|-------------|
 | `Ctrl+1` | **Extraction** | Extraire le code et la structure d'un projet dans un fichier `.txt` |
-| `Ctrl+2` | **Conversion** | Convertir des fichiers : TXT → PDF, PDF → TXT, JSON → TXT |
-| `Ctrl+3` | **Vidéo** | Convertir des vidéos en fichiers MP3 |
-| `Ctrl+4` | **Calculatrice** | Calculatrice intégrée |
-| `Ctrl+5` | **Réseau** | Envoyer et recevoir des fichiers sur le réseau local |
-| `Ctrl+6` | **Versions** | Gérer les versions d'export des projets |
-| `Ctrl+7` | **Outils** | Hub d'utilitaires et personnalisation |
-| `Ctrl+8` | **Paramètres** | Configurer la langue, le thème, les formats, la sortie |
-| `Ctrl+9` | **YouTube** | Télécharger des vidéos YouTube (MP4 ou MP3) |
+| `Ctrl+2` | **Builder** | Reconstituer un projet à partir d'un journal T-E |
+| `Ctrl+3` | **Versions** | Gérer les versions d'export des projets |
+| `Ctrl+4` | **Conversion** | Convertir des fichiers : TXT↔PDF, JSON→TXT, Images, CSV→JSON, Audio, Batch |
+| `Ctrl+5` | **YouTube** | Télécharger des vidéos YouTube (MP4 ou MP3) |
+| `Ctrl+6` | **Diff** | Comparer deux fichiers côte à côte |
+| `Ctrl+7` | **Couleurs** | Sélecteur de couleurs avec palette et export |
+| `Ctrl+8` | **Analyseur** | Statistiques de texte, fréquence, encodage, minification |
+| `Ctrl+9` | **Bloc-notes** | Éditeur multi-onglets avec surlignage syntaxique |
+| `Ctrl+0` | **Calculatrice** | Calculatrice standard, scientifique, pourcentage, bases, unités |
 | `Ctrl+K` | **Palette** | Rechercher et lancer un outil ou une action |
 
 ---
@@ -56,17 +57,18 @@ Scanne un dossier projet et exporte le contenu dans un fichier texte unique, ave
 - Sélection individuelle des fichiers
 - Barre de latérale repliable via le bouton `☰`
 
-### Conversion de fichiers
+### Conversion de fichiers (Alchimiste)
 
-Trois modes de conversion intégrés au workspace :
+Six modes de conversion intégrés au workspace :
 
-| Mode | Bibliothèque | Description |
-|------|-------------|-------------|
-| TXT → PDF | `fpdf2` | Génération PDF avec police Courier, sauts de page auto |
-| PDF → TXT | `PyPDF2` | Extraction texte page par page |
-| JSON → TXT | `json` | Formatage avec indentation configurable |
-
-Options : encodage (UTF-8, Latin-1, CP1252, ASCII), indentation JSON.
+| Mode | Onglet | Description |
+|------|--------|-------------|
+| Documents | TXT→PDF, PDF→TXT | Génération PDF avec police Courier |
+| Vidéo→MP3 | ffmpeg/pydub | Extraction audio de vidéos |
+| Images | PNG↔JPG↔BMP↔WEBP | Conversion + redimensionnement |
+| CSV→JSON | csv, json | Conversion avec délimiteur configurable |
+| Audio | MP3↔WAV↔OGG | Conversion entre formats audio |
+| Batch | Tous types | Conversion en lot de plusieurs fichiers |
 
 ### Téléchargement YouTube
 
@@ -115,7 +117,13 @@ Suivi des versions d'export par projet (`projectNamev1.txt`).
 ### Dépendances
 
 ```
-pip install pydantic fpdf2 pillow resvg-py yt-dlp PyPDF2
+pip install pydantic fpdf2 pillow resvg-py yt-dlp PyPDF2 pydub chardet
+```
+
+Ou installer toutes les dépendances (prod + dev) :
+
+```
+pip install -r requirements.txt
 ```
 
 Optionnel (thème premium) :
@@ -138,6 +146,8 @@ python main.py
 main.py                     Point d'entrée
 config.json                 Configuration runtime
 pyproject.toml              Métadonnées et outils
+requirements.txt            Dépendances production
+requirements-dev.txt        Dépendances développement
 
 src/
   config/                   Schéma Pydantic et singleton config
@@ -158,6 +168,9 @@ src/
     content_reader.py       Lecture du contenu
     export_writer.py        Écriture de l'export
     structure_generator.py  Génération de l'arborescence
+    context.py              ExtractionContext
+    report_builder.py       Génération de rapports
+    statistics_collector.py Collecte de statistiques
 
   services/                 Couche use-case
     extraction_service.py   Orchestre extraction + versioning
@@ -171,15 +184,33 @@ src/
   gui/                      Vues et widgets
     theme.py                Système de design (tokens, palettes, styles)
     theme_editor.py         Éditeur de thème live
-    calculator.py           Calculatrice
+    calculator.py           Calculatrice (5 modes)
     video_converter.py      Convertisseur vidéo
     extraction_runner.py    Gestionnaire de thread d'extraction
+    crash_report.py         Rapport de crash
+    app_guard.py            Garde-fou applicatif
+    premium.py              Fonctionnalités premium
     controller/             Contrôleurs MVC
     settings/               Onglets de paramètres
     selection/              Sélection de fichiers
     network_center/         Centre de transfert réseau
     version_explorer/       Explorateur de versions
     ui_builder/             Widgets, menus, tooltips
+
+  tools/                    Outilses secondaires
+    builder.py              Reconstitution de projet T-E
+    converter.py            Alchimiste (6 conversions)
+    youtube.py              TéléScope (YouTube)
+    diff.py                 DualiS (comparaison)
+    color_picker.py         Prisme (couleurs)
+    text_analyzer.py        Analyseur de texte (5 onglets)
+    notepad.py              Bloc-notes amélioré
+    _syntax.py              Moteur de surlignage
+    _text_stats.py          Statistiques de texte
+    versions.py             Gestionnaire de versions
+    network.py              Outils réseau
+    tools_hub.py            Hub d'outils
+    settings.py             Paramètres
 
   ui/                       Framework UI
     shell.py                Fenêtre principale (sidebar + workspace)
@@ -193,7 +224,11 @@ locale/                     Traductions
   fr/LC_MESSAGES/           Français (défaut)
   en/LC_MESSAGES/           Anglais
 
-tests/                      Tests unitaires
+tests/                      Tests
+  unit/                     Tests unitaires (322+ tests)
+  integration/              Tests d'intégration
+  conftest.py               Configuration pytest
+
 out/                        Dossier de sortie des exports
 assets/                     Logo, icônes
 ```
@@ -229,4 +264,8 @@ Toutes les options sont dans `config.json` (auto-généré au premier lancement)
 
 ## Licence
 
-Projet privé — tous droits réservés.
+Licence publique générale GNU v3.0 — voir `pyproject.toml` pour les détails.
+
+Ce logiciel est un logiciel libre distribué sous licence GPL-3.0.
+Vous êtes libre de le modifier, le redistribuer et/ou le commercialiser
+sous réserve du respect de la licence.

@@ -1,5 +1,6 @@
 # src/gui/version_explorer/controller.py
 """Contrôleur du gestionnaire de versions : logique métier sans UI."""
+from __future__ import annotations
 import threading
 from typing import Callable, Dict, List, Optional
 
@@ -61,7 +62,7 @@ class VersionExplorerController:
             self.projects_data = self.service.scan_projects()
             self._post(self.on_projects_loaded, self.projects_data)
         except Exception as e:
-            logger.error(f"Erreur lors du scan : {e}")
+            logger.error("Erreur lors du scan : %s", e)
             self._post(self.on_error, _("Erreur"), _("Impossible de scanner les fichiers : {}").format(e))
 
     # --- Actions ---
@@ -77,7 +78,7 @@ class VersionExplorerController:
             self._post(self.on_status, _("Mise a jour terminee"))
             self._post(self.on_projects_loaded, self.service.scan_projects())
         except Exception as e:
-            logger.error(f"Erreur lors de l'archivage : {e}")
+            logger.error("Erreur lors de l'archivage : %s", e)
             self._post(self.on_error, _("Erreur d'archivage"), str(e))
 
     def restore_selected(self, entries):
@@ -91,7 +92,7 @@ class VersionExplorerController:
             self._post(self.on_status, _("Mise a jour terminee"))
             self._post(self.on_projects_loaded, self.service.scan_projects())
         except Exception as e:
-            logger.error(f"Erreur lors de la restauration : {e}")
+            logger.error("Erreur lors de la restauration : %s", e)
             self._post(self.on_error, _("Erreur de restauration"), str(e))
 
     def delete_selected(self, entries):
@@ -105,7 +106,7 @@ class VersionExplorerController:
             self._post(self.on_status, _("Mise a jour terminee"))
             self._post(self.on_projects_loaded, self.service.scan_projects())
         except Exception as e:
-            logger.error(f"Erreur lors de la suppression : {e}")
+            logger.error("Erreur lors de la suppression : %s", e)
             self._post(self.on_error, _("Erreur de suppression"), str(e))
 
     def clean_all(self):
@@ -120,7 +121,7 @@ class VersionExplorerController:
             self._post(self.on_info, _("Nettoyage termine"),
                        _("Tous les exports ont ete supprimes.\n{} fichier(s) supprime(s).").format(count))
         except Exception as e:
-            logger.error(f"Erreur lors du nettoyage complet : {e}")
+            logger.error("Erreur lors du nettoyage complet : %s", e)
             self._post(self.on_error, _("Erreur de nettoyage"), str(e))
 
     def reset_counter(self, project_name: str):
@@ -129,7 +130,7 @@ class VersionExplorerController:
             self._post(self.on_status, _("Compteur reinitialise pour {}").format(project_name))
             self._post(self.on_projects_loaded, self.service.scan_projects())
         except Exception as e:
-            logger.error(f"Erreur lors de la reinitialisation : {e}")
+            logger.error("Erreur lors de la reinitialisation : %s", e)
             self._post(self.on_error, _("Erreur"), str(e))
 
     # --- Refresh ---
@@ -144,7 +145,7 @@ class VersionExplorerController:
             self._post(self.on_projects_loaded, self.projects_data)
             self._post(self.on_status, _("Mise a jour terminee"))
         except Exception as e:
-            logger.error(f"Erreur lors du rafraichissement : {e}")
+            logger.error("Erreur lors du rafraichissement : %s", e)
             self._post(self.on_error, _("Erreur de rafraichissement"), str(e))
 
     def refresh_after_action(self):
@@ -155,7 +156,7 @@ class VersionExplorerController:
             self._post(self.on_status, _("Mise a jour terminee"))
             return True
         except Exception as e:
-            logger.error(f"Erreur lors du re-scan : {e}")
+            logger.error("Erreur lors du re-scan : %s", e)
             self._post(self.on_error, _("Erreur"), str(e))
             return False
 

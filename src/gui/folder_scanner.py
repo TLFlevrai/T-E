@@ -1,4 +1,5 @@
 # src/gui/folder_scanner.py
+from __future__ import annotations
 from src.extractor.file_discovery import FileDiscoveryService
 from src.config import ExtractionOptions
 

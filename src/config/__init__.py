@@ -1,8 +1,12 @@
 # src/config/__init__.py
+from __future__ import annotations
 import json
 import threading
 from pathlib import Path
 from .schema import AppConfig, ExtractionOptions, NetworkConfig, GuiConfig
+
+from src.logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = ['AppConfig', 'ExtractionOptions', 'NetworkConfig', 'GuiConfig', 'get_config']
 
@@ -42,13 +46,13 @@ class _Config:
                 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 cls._config = AppConfig(**data)
-                print(f"[OK] Configuration chargee depuis {CONFIG_PATH}")
+                logger.info("Configuration chargee depuis %s", CONFIG_PATH)
             except Exception as e:
-                print(f"[ERROR] Erreur de chargement de config.json : {e}")
-                print("   -> Utilisation des valeurs par defaut")
+                logger.error("Erreur de chargement de config.json : %s", e)
+                logger.info("Utilisation des valeurs par defaut")
                 cls._config = default
         else:
-            print(f"[INFO] Fichier {CONFIG_PATH} non trouve, utilisation des valeurs par defaut")
+            logger.info("Fichier %s non trouve, utilisation des valeurs par defaut", CONFIG_PATH)
             cls._config = default
 
     def get(self, key: str, default=None):
@@ -83,7 +87,7 @@ class _Config:
                 json.dump(self._config.model_dump(), f, indent=2, ensure_ascii=False)
             return True
         except Exception as e:
-            print(f"[ERROR] Erreur de sauvegarde de config.json : {e}")
+            logger.error("Erreur de sauvegarde de config.json : %s", e)
             return False
 
     def update_gui(self, **kwargs) -> bool:

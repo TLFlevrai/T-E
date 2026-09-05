@@ -1,4 +1,5 @@
 # src/gui/controller/extraction_controller.py
+from __future__ import annotations
 import threading
 from .base_controller import BaseController
 from src.gui.extraction_runner import run_extraction

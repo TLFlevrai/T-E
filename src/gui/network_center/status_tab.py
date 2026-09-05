@@ -1,4 +1,5 @@
 # src/gui/network_center/status_tab.py
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from src.i18n import _

@@ -1,4 +1,5 @@
 # src/gui/version_explorer/dialog.py
+from __future__ import annotations
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -81,9 +82,7 @@ class VersionExplorerDialog(BaseDialog):
                 version_window_y=y,
             )
         except Exception:
-            pass
-
-    def _create_widgets(self):
+            logger.debug("Erreur lors de la sauvegarde de la géométrie de la fenêtre", exc_info=True)
         main = ttk.Frame(self, padding=10)
         main.pack(fill=tk.BOTH, expand=True)
 
@@ -164,7 +163,7 @@ class VersionExplorerDialog(BaseDialog):
         try:
             os.startfile(str(entry.path))
         except Exception as e:
-            logger.error(f"Impossible d'ouvrir {entry.path} : {e}")
+            logger.error("Impossible d'ouvrir %s : %s", entry.path, e)
             self.show_error(_("Erreur"), _("Impossible d'ouvrir le fichier : {}").format(e))
 
     # --- Actions ---
@@ -227,7 +226,7 @@ class VersionExplorerDialog(BaseDialog):
         try:
             os.startfile(str(folder))
         except Exception as e:
-            logger.error(f"Impossible d'ouvrir {folder} : {e}")
+            logger.error("Impossible d'ouvrir %s : %s", folder, e)
             self.show_error(_("Erreur"), _("Impossible d'ouvrir le dossier : {}").format(e))
 
     def clean_all(self):

@@ -1,4 +1,5 @@
 # src/gui/controller/__init__.py
+from __future__ import annotations
 from .base_controller import BaseController
 from .folder_controller import FolderController
 from .extraction_controller import ExtractionController

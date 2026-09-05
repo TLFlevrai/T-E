@@ -1,5 +1,6 @@
 # src/gui/settings/tabs.py
 """Onglets de la boîte de dialogue des paramètres."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 

@@ -3,10 +3,9 @@
 Interfaces (Protocoles) pour l'inversion de dépendances.
 Permet de découpler les services de leurs implémentations concrètes.
 """
-from abc import ABC, abstractmethod
+from __future__ import annotations
 from pathlib import Path
 from typing import Optional, List, Callable, Protocol, Tuple
-from src.config import ExtractionOptions
 
 # Signature de callback de progression : (fichier courant, total, nom relatif)
 ProgressCallback = Callable[[int, int, str], None]

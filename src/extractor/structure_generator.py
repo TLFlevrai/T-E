@@ -1,6 +1,7 @@
 # src/extractor/structure_generator.py
+from __future__ import annotations
 from pathlib import Path
-from typing import List, Tuple, Set
+from typing import Tuple
 from src.utils import human_size
 from src.config import ExtractionOptions
 from src.extractor.file_discovery import FileDiscoveryService

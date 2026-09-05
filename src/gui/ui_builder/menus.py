@@ -1,4 +1,5 @@
 # src/gui/ui_builder/menus.py
+from __future__ import annotations
 import os
 import tkinter as tk
 from src.i18n import _, pgettext, change_language as i18n_change_language, register_reload_callback, unregister_reload_callback
@@ -20,7 +21,7 @@ def build_menus(parent, ui: UIWidgets):
     # Enregistrer callback pour rechargement à chaud
     def refresh_menus():
         _rebuild_all_menus(parent, ui)
-    
+
     register_reload_callback(refresh_menus)
     ui._i18n_menu_refresh_callback = refresh_menus
 
@@ -89,11 +90,11 @@ def _rebuild_all_menus(parent, ui: UIWidgets):
 
     options_menu.add_command(label=_("Paramètres..."), command=lambda: open_settings_dialog(parent, ui))
     options_menu.add_separator()
-    
+
     # Thème
     options_menu.add_command(label=_("Éditeur de thème..."), command=lambda: open_theme_editor(parent))
     options_menu.add_separator()
-    
+
     # Accès rapide aux presets
     options_menu.add_command(label=_("Preset : Python uniquement"), command=lambda: apply_preset(ui, 'python_only'))
     options_menu.add_command(label=_("Preset : Assets Web"), command=lambda: apply_preset(ui, 'web_assets'))
@@ -105,7 +106,7 @@ def _rebuild_all_menus(parent, ui: UIWidgets):
     menubar.add_cascade(label=_("Langue"), menu=lang_menu)
     menu_items['lang_menu'] = lang_menu
     menu_items['lang_cascade_index'] = 2
-    
+
     lang_menu.add_command(label="Français", command=lambda: _change_language_hot(ui, "fr"))
     lang_menu.add_command(label="English", command=lambda: _change_language_hot(ui, "en"))
 
@@ -114,16 +115,37 @@ def _rebuild_all_menus(parent, ui: UIWidgets):
     menubar.add_cascade(label=_("Outils"), menu=tools_menu)
     menu_items['tools_menu'] = tools_menu
     menu_items['tools_cascade_index'] = 3
-    tools_menu.add_command(label=_("Extraction"), command=lambda: _navigate(ui, 'extract'))
-    tools_menu.add_command(label=_("Conversion"), command=lambda: _navigate(ui, 'convert'))
-    tools_menu.add_command(label=_("Vidéo"), command=lambda: _navigate(ui, 'video'))
-    tools_menu.add_command(label=_("Calculatrice"), command=lambda: _navigate(ui, 'calculator'))
+
+    # Sous-menu Extraction
+    extraction_menu = tk.Menu(tools_menu, tearoff=0)
+    tools_menu.add_cascade(label=_("Extraction"), menu=extraction_menu)
+    extraction_menu.add_command(label=_("Extraction"), command=lambda: _navigate(ui, 'extract'))
+    extraction_menu.add_command(label=_("Builder"), command=lambda: _navigate(ui, 'builder'))
+    extraction_menu.add_command(label=_("Versions"), command=lambda: _navigate(ui, 'versions'))
+
+    # Sous-menu Conversion
+    conversion_menu = tk.Menu(tools_menu, tearoff=0)
+    tools_menu.add_cascade(label=_("Conversion"), menu=conversion_menu)
+    conversion_menu.add_command(label=_("Conversion"), command=lambda: _navigate(ui, 'convert'))
+    conversion_menu.add_command(label=_("YouTube"), command=lambda: _navigate(ui, 'youtube'))
+    conversion_menu.add_command(label=_("Vidéo"), command=lambda: _navigate(ui, 'video'))
+
+    # Sous-menu Édition
+    edition_menu = tk.Menu(tools_menu, tearoff=0)
+    tools_menu.add_cascade(label=_("Édition"), menu=edition_menu)
+    edition_menu.add_command(label=_("Text Diff"), command=lambda: _navigate(ui, 'diff'))
+    edition_menu.add_command(label=_("Color Picker"), command=lambda: _navigate(ui, 'color_picker'))
+
     tools_menu.add_separator()
-    tools_menu.add_command(label=_("Centre réseau"), command=lambda: _navigate(ui, 'network'))
-    tools_menu.add_command(label=_("Gestionnaire de versions"), command=lambda: _navigate(ui, 'versions'))
-    tools_menu.add_separator()
-    tools_menu.add_command(label=_("Outils"), command=lambda: _navigate(ui, 'tools'))
-    tools_menu.add_command(label=_("Paramètres"), command=lambda: _navigate(ui, 'settings'))
+
+    # Sous-menu Système
+    systeme_menu = tk.Menu(tools_menu, tearoff=0)
+    tools_menu.add_cascade(label=_("Système"), menu=systeme_menu)
+    systeme_menu.add_command(label=_("Calculatrice"), command=lambda: _navigate(ui, 'calculator'))
+    systeme_menu.add_command(label=_("Réseau"), command=lambda: _navigate(ui, 'network'))
+    systeme_menu.add_command(label=_("Paramètres"), command=lambda: _navigate(ui, 'settings'))
+    systeme_menu.add_command(label=_("Outils"), command=lambda: _navigate(ui, 'tools'))
+
     ui.open_version_explorer_index = 0
 
     # --- Menu Vue ---

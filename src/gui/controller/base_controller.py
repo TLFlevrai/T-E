@@ -1,4 +1,5 @@
 # src/gui/controller/base_controller.py
+from __future__ import annotations
 import tkinter as tk
 from typing import List, Optional
 from src.services.extraction_service import ExtractionService
@@ -11,11 +12,17 @@ logger = setup_logger(__name__)
 
 class BaseController:
     """Classe de base contenant les dépendances partagées."""
-    
-    def __init__(self, root, ui_widgets: UIWidgets, service=None):
+
+    def __init__(self, root, ui_widgets: UIWidgets, service: Optional[ExtractionService] = None):
         self.root = root
         self.ui = ui_widgets
-        self.service = service or ExtractionService()
+        if service is None:
+            logger.warning(
+                "BaseController créé sans ExtractionService — "
+                "le service sera créé proprement par le sous-contrôleur."
+            )
+            service = ExtractionService()
+        self.service = service
         # Utiliser un attribut privé pour éviter les conflits avec les setters
         self._selected_folder = ""
         self.selected_files: List[str] = []
@@ -43,28 +50,21 @@ class BaseController:
         if hasattr(self.ui, 'log_widget'):
             self.ui.log_widget.add_info(message)
         else:
-            # Fallback pour compatibilité
-            self.ui.info_text.insert(tk.END, message + "\n")
-            if hasattr(self.ui, 'log_autoscroll_var') and self.ui.log_autoscroll_var.get():
-                self.ui.info_text.see(tk.END)
-            self.root.update_idletasks()
+            logger.warning("log_widget non disponible — message : %s", message)
 
     def clear_info(self):
         """Efface le journal via LogWidget."""
         if hasattr(self.ui, 'log_widget'):
             self.ui.log_widget.clear_info()
         else:
-            self.ui.info_text.delete(1.0, tk.END)
+            logger.warning("log_widget non disponible — clear ignored")
 
     def update_status(self, message: str, detail: Optional[str] = None):
         """Met à jour la barre de statut via LogWidget."""
         if hasattr(self.ui, 'log_widget'):
             self.ui.log_widget.update_status(message, detail)
         else:
-            if detail:
-                self.ui.status_var.set(f"{message} | {detail}")
-            else:
-                self.ui.status_var.set(message)
+            logger.warning("log_widget non disponible — status : %s", message)
 
     def set_extracting(self, extracting: bool):
         """Active/désactive l'état d'extraction."""

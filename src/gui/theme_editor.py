@@ -1,11 +1,15 @@
 # src/gui/theme_editor.py
 """Éditeur de thème personnalisé."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, colorchooser
 from src.i18n import _
 from src.config import get_config
-from src.gui.theme import THEMES, apply_theme, refresh_theme
+from src.gui.theme import THEMES, apply_theme
+from src.logger import setup_logger
 from .base_dialog import BaseDialog
+
+logger = setup_logger(__name__)
 
 
 class ThemeEditorDialog(BaseDialog):
@@ -135,9 +139,7 @@ class ThemeEditorDialog(BaseDialog):
             canvas.delete("all")
             canvas.create_rectangle(0, 0, 30, 22, fill=color, outline='')
         except Exception:
-            pass
-
-    def _on_color_change(self, key):
+            logger.debug("Erreur lors de la mise à jour de l'aperçu couleur", exc_info=True)
         """Appelé quand la couleur change via l'entry."""
         var = self.color_vars[key]
         color = var.get()

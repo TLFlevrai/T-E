@@ -1,10 +1,14 @@
 # src/gui/ui_builder/widgets.py
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from src.i18n import _, LazyString, register_reload_callback, unregister_reload_callback
+from src.logger import setup_logger
 from .ui_widgets import UIWidgets
 from .tooltip import add_lazy_tooltip
 from .log_widget import LogWidget
+
+logger = setup_logger(__name__)
 
 
 def build_widgets(parent, ui: UIWidgets):
@@ -143,12 +147,12 @@ def _register_refresh_callback(ui: UIWidgets):
                 elif attr == 'label':
                     widget.config(text=translated)
             except Exception:
-                pass  # Widget peut être détruit
+                logger.debug("Widget détruit lors du rafraîchissement i18n", exc_info=True)
         for tooltip in ui._lazy_tooltips:
             try:
                 tooltip.refresh()
             except Exception:
-                pass
+                logger.debug("Tooltip détruit lors du rafraîchissement i18n", exc_info=True)
 
     register_reload_callback(refresh_all_widgets)
     ui._i18n_refresh_callback = refresh_all_widgets

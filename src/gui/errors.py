@@ -1,5 +1,6 @@
 # src/gui/errors.py
 """Helpers centralisés pour la gestion d'erreurs et les boîtes de dialogue."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 from typing import Callable, Optional, TypeVar

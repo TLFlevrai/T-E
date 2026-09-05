@@ -1,4 +1,5 @@
 # src/gui/network_center/models.py
+from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime

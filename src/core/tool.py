@@ -30,6 +30,7 @@ class Tool:
     open: Callable[[ShellType], None] | None = None  # ouvre un dialogue dédié
     commands: tuple[str, ...] = ()
     keywords: tuple[str, ...] = ()  # termes de recherche supplémentaires (msgids)
+    order: int = 100                # position within category (lower = higher)
 
     def __post_init__(self) -> None:
         if self.view is None and self.open is None:

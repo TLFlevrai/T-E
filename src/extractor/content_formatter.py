@@ -1,4 +1,5 @@
 # src/extractor/content_formatter.py
+from __future__ import annotations
 import json
 
 def format_json_content(content, file_path=None):

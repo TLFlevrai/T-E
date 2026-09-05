@@ -1,0 +1,8 @@
+pydantic>=2.0
+fpdf2>=2.7
+pillow>=10.0
+resvg-py>=0.4
+yt-dlp>=2024.0
+PyPDF2>=3.0
+pydub>=0.25
+chardet>=5.0

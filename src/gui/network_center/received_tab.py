@@ -1,4 +1,5 @@
 # src/gui/network_center/received_tab.py
+from __future__ import annotations
 import os
 import shutil
 import tkinter as tk

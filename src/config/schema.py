@@ -1,5 +1,12 @@
 # src/config/schema.py
+from __future__ import annotations
+import secrets
 from pydantic import BaseModel, Field
+
+
+def _generate_auth_token() -> str:
+    """Génère un token d'authentification aléatoire sécurisé."""
+    return secrets.token_hex(32)
 
 
 class NetworkConfig(BaseModel):
@@ -10,7 +17,7 @@ class NetworkConfig(BaseModel):
     broadcast_msg: str = Field(default="PYEXTRACTOR_DISCOVER", description="Message de découverte broadcast")
     reply_msg: str = Field(default="PYEXTRACTOR_HERE", description="Message de réponse à la découverte")
     auth_enabled: bool = Field(default=True, description="Activer l'authentification par token")
-    auth_token: str = Field(default="change-me-secure-random-token", description="Token secret partagé (min 32 chars recommandé)")
+    auth_token: str = Field(default_factory=_generate_auth_token, description="Token secret partagé (généré aléatoirement)")
     allowed_extensions: list[str] = Field(default=[".txt"], description="Extensions de fichiers autorisées")
 
 

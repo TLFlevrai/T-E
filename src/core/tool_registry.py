@@ -36,7 +36,7 @@ class ToolRegistry:
         return list(self._tools.values())
 
     def by_category(self) -> list[tuple[str, list[Tool]]]:
-        """Retourne les outils groupés par catégorie (ordre de premier aperçu)."""
+        """Retourne les outils groupés par catégorie, triés par order."""
         grouped: dict[str, list[Tool]] = {}
         order: list[str] = []
         for tool in self._tools.values():
@@ -44,6 +44,9 @@ class ToolRegistry:
                 grouped[tool.category] = []
                 order.append(tool.category)
             grouped[tool.category].append(tool)
+        # Trier chaque catégorie par order
+        for cat in grouped:
+            grouped[cat].sort(key=lambda t: t.order)
         return [(category, grouped[category]) for category in order]
 
     def search(self, query: str) -> list[Tool]:

@@ -1,4 +1,5 @@
 # src/gui/network_center/services/network_scanner_service.py
+from __future__ import annotations
 from typing import Dict, List
 from ..models import Peer
 from src.network.discovery import DiscoveryService

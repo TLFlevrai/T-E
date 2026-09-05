@@ -3,6 +3,7 @@
 Garde-fous globaux de l'application : crash handler, exceptions des
 callbacks Tk, et exécution thread-safe sur l'UI.
 """
+from __future__ import annotations
 import queue
 import sys
 import threading
@@ -31,7 +32,7 @@ def install_excepthook(on_crash: Optional[Callable[[str], None]] = None):
             try:
                 on_crash(details)
             except Exception:
-                pass
+                logger.debug("Erreur dans le callback on_crash du excepthook", exc_info=True)
 
     sys.excepthook = _hook
 
@@ -65,7 +66,7 @@ def install_tk_callback_guard(root: tk.Tk, on_crash: Optional[Callable[[str], No
             try:
                 root.after(0, lambda: on_crash(details))
             except Exception:
-                pass
+                logger.debug("Erreur dans root.after pour le callback Tkinter", exc_info=True)
 
     root.report_callback_exception = _report
 

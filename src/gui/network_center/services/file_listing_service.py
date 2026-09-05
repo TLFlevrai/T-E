@@ -1,4 +1,5 @@
 # src/gui/network_center/services/file_listing_service.py
+from __future__ import annotations
 from pathlib import Path
 from typing import List
 from ..models import FileItem

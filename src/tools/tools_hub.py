@@ -12,7 +12,10 @@ from src.config import get_config
 from src.core.command_registry import Command
 from src.core.tool import Tool
 from src.i18n import _
+from src.logger import setup_logger
 from src.ui.tooltips import ToolTipContent, add_lazy_rich_tooltip
+
+logger = setup_logger(__name__)
 
 
 def build_tools_view(shell) -> ttk.Frame:
@@ -71,8 +74,8 @@ def build_tools_view(shell) -> ttk.Frame:
         ))
         shell._hub_tips = getattr(shell, '_hub_tips', []) + [tip]
 
-    # --- Divers ---
-    _section(frame, 11, _("Divers"))
+    # --- Système ---
+    _section(frame, 11, _("Système"))
     _card(frame, 12, "📂", _("Ouvrir le dossier de sortie"),
           _("Ouvre le dossier des exports (out/)."),
           lambda: _open_output_dir(shell))
@@ -192,7 +195,7 @@ def _reset_to_defaults(shell) -> None:
         from src.gui.recent_files import clear_recent_folders
         clear_recent_folders()
     except Exception:
-        pass
+        logger.debug("Exception clearing recent folders during reset", exc_info=True)
 
     messagebox.showinfo(
         _("Réinitialisation"),
@@ -216,13 +219,14 @@ def _cmd_reset_to_defaults(shell) -> None:
 
 TOOL = Tool(
     id='tools',
-    name="Outils",
+    name="Atelier",
     description="Utilitaires et personnalisation de TE.",
-    category="Personnalisation",
-    icon='🧰',
+    category="Système",
+    icon='🛠️',
     shortcut='Ctrl+7',
     view=build_tools_view,
-    keywords=('utilitaires', 'tools', 'theme', 'preset', 'personnaliser'),
+    keywords=('utilitaires', 'tools', 'theme', 'preset', 'personnaliser', 'atelier'),
+    order=4,
 )
 
 
@@ -230,12 +234,12 @@ def register(reg, cmds) -> None:
     reg.register(TOOL)
     cmds.register(Command(
         id='tool.tools',
-        label="Outils",
+        label="Atelier",
         description="Utilitaires et personnalisation de TE",
         shortcut='Ctrl+7',
-        icon='🧰',
+        icon='🛠️',
         tool_id='tools',
-        keywords=('utilitaires', 'tools', 'theme'),
+        keywords=('utilitaires', 'tools', 'theme', 'atelier'),
     ))
     cmds.register(Command(
         id='tools.clear_recent',

@@ -1,4 +1,5 @@
 # src/extractor/stats_writer.py
+from __future__ import annotations
 from pathlib import Path
 
 def write_statistics_section(output_file, folder, include_subdirs,

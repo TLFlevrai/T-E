@@ -14,6 +14,9 @@ from pathlib import Path
 from src.config import get_config
 from src.gui.theme import apply_theme, get_color
 from src.i18n import _, register_reload_callback, unregister_reload_callback
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class TEShell:
@@ -50,24 +53,27 @@ class TEShell:
         self.workspace = Workspace(self)
         self.workspace.grid(row=0, column=1, sticky='nsew')
 
-        # Bouton toggle sidebar (en haut à droite du workspace)
+        # État du toggle sidebar
         self._sidebar_visible = True
-        self._toggle_btn = tk.Button(
+
+        # Bouton toggle toujours visible sur le workspace
+        self._workspace_toggle = tk.Button(
             self.workspace,
-            text="☰",
-            font=('Segoe UI', 14),
+            text="◀",
+            font=('Segoe UI', 11),
             bg=get_color('surface'),
             fg=get_color('fg'),
             activebackground=get_color('surface_alt'),
             activeforeground=get_color('fg'),
             bd=0,
-            padx=10,
+            padx=6,
             pady=2,
             cursor="hand2",
             command=self.toggle_sidebar,
+            relief='flat',
         )
-        self._toggle_btn.place(relx=1.0, x=-8, y=8, anchor="ne")
-        self._toggle_btn.lift()
+        self._workspace_toggle.place(relx=0.0, rely=0.0, x=4, y=4, anchor="nw")
+        self._workspace_toggle.lift()
 
         # Outil par défaut : Extraction (construit vue + contrôleur + menus)
         self.show_tool('extract')
@@ -97,14 +103,17 @@ class TEShell:
         if self._sidebar_visible:
             self.sidebar.grid_forget()
             self.root.columnconfigure(0, weight=0, minsize=0)
-            self._toggle_btn.config(text="☰")
             self._sidebar_visible = False
         else:
             self.root.columnconfigure(0, weight=0, minsize=210)
             self.sidebar.grid(row=0, column=0, sticky='ns')
-            self._toggle_btn.config(text="☰")
             self._sidebar_visible = True
-        self._toggle_btn.lift()
+        # Mettre à jour les boutons toggle
+        label = "▶" if not self._sidebar_visible else "◀"
+        if hasattr(self, '_workspace_toggle'):
+            self._workspace_toggle.config(text=label)
+        if hasattr(self.sidebar, '_toggle_btn'):
+            self.sidebar._toggle_btn.config(text=label)
 
     # --- Fenêtre ---
 
@@ -140,8 +149,8 @@ class TEShell:
                 window_x=x,
                 window_y=y,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Erreur sauvegarde géométrie fenêtre : %s", exc)
 
     def _set_window_icon(self):
         """Définit l'icône de la fenêtre depuis un SVG."""
@@ -155,8 +164,8 @@ class TEShell:
                 photo = ImageTk.PhotoImage(img)
                 self.root.iconphoto(True, photo)
                 self.root._icon_photo = photo
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Erreur icône fenêtre : %s", exc)
 
     def _restore_session(self):
         """Restaure le dernier dossier sélectionné au démarrage."""
@@ -165,8 +174,8 @@ class TEShell:
             controller = getattr(self, 'extract_controller', None)
             if last_folder and os.path.isdir(last_folder) and controller:
                 controller.select_recent_folder(last_folder)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Erreur restauration session : %s", exc)
 
     # --- Navigation entre outils ---
 

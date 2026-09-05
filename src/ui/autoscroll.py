@@ -14,6 +14,9 @@ from tkinter import ttk
 from typing import Any, Callable
 
 from src.gui.theme import get_color
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class AutoScrollFrame(ttk.Frame):
@@ -154,7 +157,7 @@ class AutoScrollFrame(ttk.Frame):
             for child in widget.winfo_children():
                 self.bind_mousewheel_recursive(child)
         except Exception:
-            pass
+            logger.debug("Exception binding mousewheel to widget", exc_info=True)
 
     def _on_mouse_enter(self, event):
         if sys.platform == "darwin":

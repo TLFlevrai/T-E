@@ -1,4 +1,5 @@
 # src/extractor/content_reader.py
+from __future__ import annotations
 import base64
 from pathlib import Path
 from typing import Tuple
@@ -7,6 +8,8 @@ from src.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 Mo limite par défaut
+
 
 class ContentReader:
     """Responsable de la lecture du contenu des fichiers avec détection d'encodage."""
@@ -14,10 +17,20 @@ class ContentReader:
     @staticmethod
     def read_file_content(full_path: Path, ext: str) -> Tuple[str, int, int, bool]:
         """
-        Lit le contenu d’un fichier selon son extension.
+        Lit le contenu d'un fichier selon son extension.
         Retourne (content, num_lines, file_size, read_ok).
         """
         try:
+            file_size = full_path.stat().st_size
+
+            if file_size > MAX_FILE_SIZE:
+                logger.warning(
+                    "Fichier trop volumineux (%s octets) : %s — ignoré",
+                    file_size, full_path,
+                )
+                content = f"// ERREUR: Fichier trop volumineux ({file_size} octets)\n"
+                return content, 0, file_size, False
+
             if ext == '.mo':
                 with open(full_path, 'rb') as f:
                     raw = f.read()
@@ -31,11 +44,10 @@ class ContentReader:
                     from .content_formatter import format_json_content
                     content = format_json_content(content, full_path)
                 num_lines = len(content.splitlines())
-                file_size = full_path.stat().st_size
                 read_ok = True
         except Exception as e:
-            logger.error(f"Erreur de lecture du fichier {full_path} : {e}")
-            content = f"// ERREUR: Impossible de lire le fichier : {str(e)}\n"
+            logger.error("Erreur de lecture du fichier %s : %s", full_path, e)
+            content = f"// ERREUR: Impossible de lire le fichier : {e}\n"
             num_lines = 0
             file_size = 0
             read_ok = False

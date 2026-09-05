@@ -1,5 +1,6 @@
 # src/gui/converter.py
 """Convertisseur SVG vers ICO."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, filedialog
 from pathlib import Path
@@ -172,7 +173,7 @@ class SVGToICOConverter(BaseDialog):
             show_toast(self, _("Conversion terminée avec succès"), 'success', parent=self)
             
         except Exception as e:
-            logger.error(f"Erreur lors de la conversion : {e}")
+            logger.error("Erreur lors de la conversion : %s", e)
             self.status_var.set(_("Erreur lors de la conversion"))
             self.show_error(_("Erreur"), _("Impossible de convertir : {}").format(str(e)))
         finally:

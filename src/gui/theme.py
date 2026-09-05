@@ -11,10 +11,14 @@ Identité visuelle « Graphite & Cyan » :
 Toutes les couleurs passent par les tokens : aucun code hexadécimal
 dispersé dans l'application (utiliser `get_color(key)`).
 """
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
 from src.config import get_config
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Tokens d'espacement / rayons / typographie
@@ -176,7 +180,7 @@ def resolve_palette(theme_name: str) -> dict:
             palette.update({k: v for k, v in custom.items()
                             if isinstance(v, str) and v.startswith('#')})
         except Exception:
-            pass
+            logger.debug("Exception loading custom theme colors", exc_info=True)
         palette.update({k: v for k, v in THEMES.get('custom', {}).items()
                         if isinstance(v, str) and v.startswith('#')})
         return palette
@@ -202,7 +206,7 @@ def apply_theme(theme_name: str = None):
         if style.theme_use() != 'clam':
             style.theme_use('clam')
     except Exception:
-        pass
+        logger.debug("Exception switching ttk theme to clam", exc_info=True)
 
     _apply_base_styles(style, colors)
     _apply_component_styles(style, colors)
@@ -213,14 +217,14 @@ def apply_theme(theme_name: str = None):
         if root:
             _apply_to_tk_widgets(root, colors)
     except Exception:
-        pass
+        logger.debug("Exception applying theme to Tk widgets", exc_info=True)
 
     # Persistance
     try:
         config = get_config()
         config.update_gui(theme=theme_name)
     except Exception:
-        pass
+        logger.debug("Exception persisting theme config", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +296,7 @@ def _apply_base_styles(style: ttk.Style, c: dict):
             root.option_add('*TCombobox*Listbox.selectBackground', c['select_bg'])
             root.option_add('*TCombobox*Listbox.selectForeground', c['select_fg'])
     except Exception:
-        pass
+        logger.debug("Exception configuring Combobox Listbox styles", exc_info=True)
 
     # Checkboxes / radios : indicateur accentué
     style.configure('TCheckbutton', background=c['bg'], foreground=c['fg'],
@@ -500,13 +504,13 @@ def _apply_to_tk_widgets(widget, colors):
                              activebackground=colors['bg'],
                              activeforeground=colors['fg'])
     except Exception:
-        pass
+        logger.debug("Exception applying theme to widget %s", widget_class, exc_info=True)
 
     try:
         for child in widget.winfo_children():
             _apply_to_tk_widgets(child, colors)
     except Exception:
-        pass
+        logger.debug("Exception iterating widget children for theme", exc_info=True)
 
 
 def refresh_theme():

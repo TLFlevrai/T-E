@@ -1,4 +1,5 @@
 # src/services/extraction_service.py
+from __future__ import annotations
 import shutil
 from pathlib import Path
 from typing import Optional, List, Callable, Tuple
@@ -74,7 +75,7 @@ class ExtractionService:
 
         if success is None:
             # Extraction annulée : on ne consomme pas la version
-            logger.info(f"Extraction annulée : {folder_name}")
+            logger.info("Extraction annulée : %s", folder_name)
             return None, None, None
 
         if success:
@@ -99,7 +100,7 @@ class ExtractionService:
                 self._archive_previous_versions(
                     folder_name, Path(output_filename), log_callback)
 
-            logger.info(f"Extraction réussie : {output_filename}")
+            logger.info("Extraction réussie : %s", output_filename)
             return True, str(output_filename), stats
         else:
             logger.error("Échec de l'extraction")
@@ -124,12 +125,12 @@ class ExtractionService:
                         if log_callback:
                             log_callback(_("Ancienne version archivée : {}").format(entry.path.name))
                     except Exception as e:
-                        logger.warning(f"Archivage impossible de {entry.path} : {e}")
+                        logger.warning("Archivage impossible de %s : %s", entry.path, e)
             if archived and log_callback:
                 log_callback(_("{} ancienne(s) version(s) archivée(s)").format(archived))
             return archived
         except Exception as e:
-            logger.error(f"Erreur pendant l'archivage des anciennes versions : {e}")
+            logger.error("Erreur pendant l'archivage des anciennes versions : %s", e)
             return 0
 
     def _create_extractor_with_options(self, options: ExtractionOptions) -> ICodeExtractor:
@@ -152,9 +153,9 @@ class ExtractionService:
                         shutil.move(str(item), str(archive_dir / item.name))
                         moved_files.append(item.name)
                     except Exception as e:
-                        logger.error(f"Erreur archivage {item} : {e}")
+                        logger.error("Erreur archivage %s : %s", item, e)
                         raise
-            logger.info(f"Archivés : {', '.join(moved_files)}")
+            logger.info("Archivés : %s", ', '.join(moved_files))
 
         self.version_manager.reset()
         logger.info("Historique des versions réinitialisé.")

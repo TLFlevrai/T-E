@@ -6,3 +6,5 @@ Les consommateurs importent les sous-modules directement
 facade pour éviter des imports eagerly de dépendances lourdes (PIL,
 ttkbootstrap) au démarrage.
 """
+
+from __future__ import annotations

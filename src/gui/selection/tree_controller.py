@@ -1,4 +1,5 @@
 # src/gui/selection/tree_controller.py
+from __future__ import annotations
 
 class TreeController:
     def __init__(self, tree, file_nodes, folder_nodes, folder_children):

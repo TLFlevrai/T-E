@@ -1,4 +1,5 @@
 # src/gui/selection/tree_builder.py
+from __future__ import annotations
 from pathlib import Path
 from .utils import get_allowed_extensions, format_size
 

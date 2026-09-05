@@ -8,6 +8,7 @@ d'accent à gauche du libellé.
 from __future__ import annotations
 
 import contextlib
+import sys
 import tkinter as tk
 from tkinter import ttk
 from typing import Any
@@ -15,7 +16,10 @@ from typing import Any
 from src.core.tool_registry import registry
 from src.gui.theme import get_color, get_font
 from src.i18n import _, register_reload_callback, unregister_reload_callback
+from src.logger import setup_logger
 from src.ui.tooltips import ToolTipContent, add_lazy_rich_tooltip
+
+logger = setup_logger(__name__)
 
 # Délai (ms) avant reconstruction de la liste après une frappe : la sidebar
 # détruit/recrée tous ses boutons + tooltips ; le faire à chaque caractère
@@ -54,8 +58,31 @@ class Sidebar(ttk.Frame):
         # En-tête applicatif
         header = ttk.Frame(self, style='Sidebar.TFrame', padding=(14, 14, 14, 10))
         header.pack(fill=tk.X)
-        title = ttk.Label(header, text="TE", style='SidebarTitle.TLabel')
-        title.pack(anchor=tk.W)
+
+        title_row = ttk.Frame(header, style='Sidebar.TFrame')
+        title_row.pack(fill=tk.X)
+
+        title = ttk.Label(title_row, text="TE", style='SidebarTitle.TLabel')
+        title.pack(side=tk.LEFT)
+
+        # Bouton toggle sidebar dans l'en-tête
+        self._toggle_btn = tk.Button(
+            title_row,
+            text="◀",
+            font=('Segoe UI', 10),
+            bg=get_color('surface'),
+            fg=get_color('fg'),
+            activebackground=get_color('surface_alt'),
+            activeforeground=get_color('fg'),
+            bd=0,
+            padx=6,
+            pady=2,
+            cursor="hand2",
+            command=self._on_toggle_click,
+            relief='flat',
+        )
+        self._toggle_btn.pack(side=tk.RIGHT)
+
         subtitle = ttk.Label(header, text=_("Toolkit multi-outils"),
                              style='SidebarSubtitle.TLabel')
         subtitle.pack(anchor=tk.W)
@@ -135,12 +162,10 @@ class Sidebar(ttk.Frame):
 
     def _bind_mousewheel(self, widget):
         """Attache le défilement à la molette de souris."""
-        import sys
         widget.bind("<Enter>", self._on_mouse_enter, add="+")
         widget.bind("<Leave>", self._on_mouse_leave, add="+")
 
     def _on_mouse_enter(self, _event):
-        import sys
         if sys.platform == "darwin":
             self._canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         elif sys.platform.startswith("win"):
@@ -150,7 +175,6 @@ class Sidebar(ttk.Frame):
             self._canvas.bind_all("<Button-5>", self._on_mousewheel)
 
     def _on_mouse_leave(self, _event):
-        import sys
         if sys.platform in ("darwin", "win32") or sys.platform.startswith("win"):
             self._canvas.unbind_all("<MouseWheel>")
         else:
@@ -158,7 +182,6 @@ class Sidebar(ttk.Frame):
             self._canvas.unbind_all("<Button-5>")
 
     def _on_mousewheel(self, event):
-        import sys
         if sys.platform == "darwin":
             self._canvas.yview_scroll(-1 * event.delta, "units")
         elif sys.platform.startswith("win"):
@@ -171,8 +194,12 @@ class Sidebar(ttk.Frame):
 
     def _populate(self, parent: ttk.Frame):
         query = '' if self._placeholder_active else self._search_var.get().strip().lower()
-        tools = registry.search(query) if query else None
-        grouped = registry.by_category() if tools is None else [("", tools)]
+        try:
+            tools = registry.search(query) if query else None
+            grouped = registry.by_category() if tools is None else [("", tools)]
+        except Exception as exc:
+            logger.error("Erreur chargement outils : %s", exc)
+            grouped = []
 
         for category, tool_list in grouped:
             if category:
@@ -257,20 +284,46 @@ class Sidebar(ttk.Frame):
 
     def _rebuild(self):
         """Reconstruit la sidebar avec la langue courante."""
-        current = self.shell.workspace.current_id if hasattr(self.shell, 'workspace') else None
-        for child in self.winfo_children():
-            child.destroy()
-        self._buttons.clear()
-        self._indicators.clear()
-        self._tooltips.clear()
-        self._body = None
-        self._canvas = None
-        self._scrollbar = None
-        self._placeholder_active = False
-        self._build()
-        self._apply_active(current)
+        current = None
+        try:
+            current = self.shell.workspace.current_id if hasattr(self.shell, 'workspace') else None
+        except Exception:
+            logger.debug("Exception reading current workspace ID during rebuild", exc_info=True)
+
+        try:
+            for child in self.winfo_children():
+                child.destroy()
+            self._buttons.clear()
+            self._indicators.clear()
+            self._tooltips.clear()
+            self._body = None
+            self._canvas = None
+            self._scrollbar = None
+            self._placeholder_active = False
+            self._build()
+            self._apply_active(current)
+            # Mettre à jour le bouton toggle après rebuild
+            self._update_toggle_button()
+        except Exception as exc:
+            logger.error("Erreur reconstruction sidebar : %s", exc)
+            try:
+                if not self._buttons:
+                    self._build()
+                    self._update_toggle_button()
+            except Exception:
+                logger.debug("Exception rebuilding sidebar body", exc_info=True)
+
+    def _update_toggle_button(self):
+        """Met à jour le texte du bouton toggle selon l'état."""
+        if hasattr(self, '_toggle_btn') and hasattr(self.shell, '_sidebar_visible'):
+            self._toggle_btn.config(text="▶" if not self.shell._sidebar_visible else "◀")
 
     def unregister(self):
         """Désenregistre les callbacks i18n."""
         if hasattr(self, '_reload_callback'):
             unregister_reload_callback(self._reload_callback)
+
+    def _on_toggle_click(self):
+        """Callback du bouton toggle sidebar."""
+        if hasattr(self.shell, 'toggle_sidebar'):
+            self.shell.toggle_sidebar()

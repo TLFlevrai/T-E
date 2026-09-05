@@ -1,4 +1,5 @@
 # src/gui/network_center/views/send_controls_view.py
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable

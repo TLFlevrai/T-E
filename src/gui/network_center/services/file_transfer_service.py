@@ -1,4 +1,5 @@
 # src/gui/network_center/services/file_transfer_service.py
+from __future__ import annotations
 import socket
 import threading
 from pathlib import Path

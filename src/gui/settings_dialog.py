@@ -1,5 +1,6 @@
 # src/gui/settings_dialog.py
 """Boîte de dialogue des paramètres avec onglets."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 

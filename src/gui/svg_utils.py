@@ -1,5 +1,6 @@
 # src/gui/svg_utils.py
 """Rendu d'images SVG vers PIL avec resvg (aucune dépendance native requise)."""
+from __future__ import annotations
 from io import BytesIO
 from pathlib import Path
 

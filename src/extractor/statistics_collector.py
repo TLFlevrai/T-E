@@ -1,5 +1,5 @@
 # src/extractor/statistics_collector.py
-from typing import Dict, List, Tuple
+from __future__ import annotations
 
 
 class StatisticsCollector:

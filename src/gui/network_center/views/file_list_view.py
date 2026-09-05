@@ -1,4 +1,5 @@
 # src/gui/network_center/views/file_list_view.py
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable, List, Optional

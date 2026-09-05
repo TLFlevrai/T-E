@@ -1,17 +1,20 @@
 # src/gui/ui_builder/log_widget.py
 """Widget de journal avec recherche, surbrillance et auto-scroll."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import TYPE_CHECKING, Callable, Optional
 
 from src.config import get_config
-from src.i18n import _, LazyString, register_reload_callback, unregister_reload_callback
+from src.i18n import _, LazyString, register_reload_callback
+from src.logger import setup_logger
 
-from .tooltip import add_lazy_tooltip
 from .ui_widgets import register_lazy_labelframe, register_lazy_widget
 
 if TYPE_CHECKING:
     from .ui_widgets import UIWidgets
+
+logger = setup_logger(__name__)
 
 
 class LogWidget:
@@ -137,9 +140,7 @@ class LogWidget:
             config = get_config()
             config.update_gui(log_autoscroll=self.ui.log_autoscroll_var.get())
         except Exception:
-            pass
-
-    # --- Méthodes publiques pour le contrôleur ---
+            logger.debug("Erreur lors de la sauvegarde de la préférence auto-scroll", exc_info=True)
 
     def add_info(self, message: str):
         """Ajoute un message au journal (avec limitation du nombre de lignes)."""

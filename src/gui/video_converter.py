@@ -1,5 +1,6 @@
 # src/gui/video_converter.py
 """Convertisseur vidéo vers MP3 (UI)."""
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, filedialog
 from pathlib import Path

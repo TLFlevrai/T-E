@@ -1,7 +1,10 @@
 # src/extractor/file_processor.py
+from __future__ import annotations
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
+
+from src.i18n import _
 from src.extractor.content_reader import ContentReader
 from src.logger import setup_logger
 
@@ -62,15 +65,15 @@ class FileProcessor:
 
     def _get_file_type(self, ext: str) -> str:
         return {
-            '.py': "Python",
+            '.py': _("Python"),
             '.json': "JSON",
-            '.po': "Traduction (PO)",
-            '.mo': "Traduction compilée (MO)",
+            '.po': _("Traduction (PO)"),
+            '.mo': _("Traduction compilée (MO)"),
             '.html': "HTML",
             '.htm': "HTML",
             '.css': "CSS",
             '.js': "JavaScript"
-        }.get(ext, "Texte")
+        }.get(ext, _("Texte"))
 
     def _update_stats(self, ext: str, num_lines: int, file_size: int):
         key = ext.lstrip('.')

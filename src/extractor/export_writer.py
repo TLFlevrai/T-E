@@ -1,13 +1,17 @@
 # src/extractor/export_writer.py
+from __future__ import annotations
 from pathlib import Path
+
+from src.i18n import _
 from src.utils import get_current_date, human_size
 from .stats_writer import write_statistics_section
 from .file_processor import FileSectionResult  # Import du DTO
 
 
 def write_header(output_file, folder):
-    output_file.write(f"Extraction du code du dossier : {folder}\n")
-    output_file.write(f"Date d'extraction : {get_current_date()}\n")
+    output_file.write(f"{_('Extraction du code du dossier')} : {folder}\n")
+    date_label = _("Date d'extraction")
+    output_file.write(f"{date_label} : {get_current_date()}\n")
     output_file.write("=" * 80 + "\n\n")
 
 
@@ -26,16 +30,16 @@ def write_file_section(output_file, result: FileSectionResult):
         output_file.write(f"{rel_path}\n")
     else:
         output_file.write(f"{full_path.name}\n")
-    output_file.write(f"Type: {result.file_type}\n")
-    output_file.write(f"Chemin complet: {full_path}\n")
+    output_file.write(f"{_('Type')}: {result.file_type}\n")
+    output_file.write(f"{_('Chemin complet')}: {full_path}\n")
 
     if result.include_file_metadata:
         parent_dir = rel_path.parent if result.show_file_paths else full_path.parent
         if not parent_dir or str(parent_dir) == '.':
             parent_dir = "."
-        output_file.write(f"Dossier parent: {parent_dir}\n")
-        output_file.write(f"Taille: {human_size(result.file_size)}\n")
-        output_file.write(f"Nombre de lignes: {result.num_lines}\n")
+        output_file.write(f"{_('Dossier parent')}: {parent_dir}\n")
+        output_file.write(f"{_('Taille')}: {human_size(result.file_size)}\n")
+        output_file.write(f"{_('Nombre de lignes')}: {result.num_lines}\n")
 
     output_file.write("-" * 80 + "\n")
     if ext == '.mo' and result.read_ok:

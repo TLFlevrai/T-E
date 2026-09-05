@@ -21,11 +21,15 @@ def register_all_tools() -> None:
     if _registered:
         return
 
-    from . import (calculator, converter, extractor, network, settings,
-                   tools_hub, versions, video, youtube)
+    from . import (builder, calculator, color_picker, converter, diff,
+                   extractor, network, notepad, settings, text_analyzer,
+                   tools_hub, versions, youtube)
 
-    for module in (extractor, converter, video, calculator, network,
-                   versions, tools_hub, settings, youtube):
+    # Extraction -> Conversion -> Édition -> Système
+    for module in (extractor, builder, versions,
+                   converter, youtube,
+                   diff, color_picker, text_analyzer, notepad,
+                   calculator, network, settings, tools_hub):
         module.register(_registry, _commands)
 
     _register_app_commands(_commands)
