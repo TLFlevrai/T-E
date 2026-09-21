@@ -52,6 +52,8 @@ class FolderController(BaseController):
             get_config().update_gui(last_folder=folder)
         except Exception:
             logger.debug("Erreur lors de la sauvegarde du dernier dossier", exc_info=True)
+
+    def _log_folder_stats(self):
         """Affiche les statistiques du dossier dans le journal."""
         self.add_info(_("Dossier sélectionné : {}").format(self._selected_folder))
 
