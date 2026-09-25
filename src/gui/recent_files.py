@@ -5,10 +5,17 @@ import os
 from pathlib import Path
 
 from src.logger import setup_logger
+from src.paths import PathProvider, migrate_legacy_files, migrate_one_legacy_file
 
 logger = setup_logger(__name__)
 
-RECENT_FILE = Path(__file__).parent.parent.parent / "recent_folders.json"
+_provider = PathProvider()
+_provider.ensure_dirs()
+migrate_legacy_files(_provider)
+
+RECENT_FILE = _provider.config_dir() / "recent_folders.json"
+if not RECENT_FILE.exists():
+    migrate_one_legacy_file(_provider, "recent_folders.json", RECENT_FILE, "recent folders")
 MAX_RECENT = 10
 
 

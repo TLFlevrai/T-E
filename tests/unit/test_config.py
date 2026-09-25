@@ -8,6 +8,25 @@ from src.config import get_config, _Config
 from src.config.schema import AppConfig, ExtractionOptions, NetworkConfig, GuiConfig
 
 
+@pytest.fixture
+def temp_config(tmp_path):
+    """Crée un fichier config.json temporaire pour les tests."""
+    config_file = tmp_path / "config.json"
+    config_data = {
+        "output_dir": str(tmp_path / "out"),
+        "language": "en",
+        "network": {
+            "auth_enabled": False,
+            "server_port": 50000
+        },
+        "extraction": {
+            "include_txt": False
+        }
+    }
+    config_file.write_text(json.dumps(config_data), encoding='utf-8')
+    return config_file
+
+
 class TestConfigSchema:
     """Tests de validation des schémas Pydantic."""
     

@@ -1,5 +1,9 @@
 # TE — Toolkit Multi-Outils
 
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-GPL--3.0-orange)
+
 Application de bureau Python/Tkinter regroupant un ensemble d'outils pour l'extraction de code, la conversion de fichiers, le téléchargement vidéo, le transfert réseau et la personnalisation de l'interface.
 
 ---
@@ -89,6 +93,12 @@ Système de transfert TCP sur le réseau local avec découverte automatique.
 - **Intégrité** : hash SHA-256 vérifié à la réception
 - **Interface** : onglets Envoi, Reçus, Journal, Statut
 
+> ⚠ **Usage LAN** : Par défaut, le serveur écoute uniquement sur `127.0.0.1` (localhost).
+> Pour activer l'écoute sur le réseau local, configurez `network.server_host: "0.0.0.0"` dans `config.json`
+> **et** définissez un `network.auth_token` unique (pas la valeur par défaut).
+> Un avertissement s'affichera au démarrage : *le trafic n'est PAS chiffré, utilisez un VPN ou tunnel SSH
+> sur réseaux non de confiance*.
+
 ### Gestion des versions
 
 Suivi des versions d'export par projet (`projectNamev1.txt`).
@@ -112,30 +122,42 @@ Suivi des versions d'export par projet (`projectNamev1.txt`).
 ### Prérequis
 
 - Python >= 3.10
-- pip
+- pip (ou [uv](https://github.com/astral-sh/uv) recommandé pour reproductibilité)
 
 ### Dépendances
 
+Avec pip :
 ```
 pip install pydantic fpdf2 pillow resvg-py yt-dlp PyPDF2 pydub chardet
 ```
 
 Ou installer toutes les dépendances (prod + dev) :
-
 ```
 pip install -r requirements.txt
 ```
 
-Optionnel (thème premium) :
+Avec uv (reproductible, lock file `uv.lock`) :
+```
+uv sync
+```
+Ou pour installer seulement les dépendances de production :
+```
+uv sync --no-dev
+```
 
+Optionnel (thème premium) :
 ```
 pip install ttkbootstrap
+# ou
+uv add ttkbootstrap
 ```
 
 ### Lancement
 
 ```bash
 python main.py
+# ou avec uv
+uv run python main.py
 ```
 
 ---

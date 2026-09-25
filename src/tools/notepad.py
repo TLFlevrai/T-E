@@ -265,6 +265,8 @@ def build_notepad_view(shell) -> ttk.Frame:
             state['current_tab'] = _get_current_tab_id()
         else:
             state['current_tab'] = None
+            # Reset counter when all tabs are closed
+            _UNSAVED_COUNTER[0] = 0
             _new_tab()
 
     def _get_current_tab_id():
@@ -426,7 +428,8 @@ pre {{ white-space: pre-wrap; word-wrap: break-word; }}
         state['search_visible'] = not state['search_visible']
         if state['search_visible']:
             search_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 4))
-            search_entry.focus_set()
+            if 'search_entry' in state:
+                state['search_entry'].focus_set()
         else:
             search_frame.grid_forget()
 
@@ -606,6 +609,9 @@ pre {{ white-space: pre-wrap; word-wrap: break-word; }}
         ttk.Entry(parent, textvariable=replace_var, width=25).grid(row=0, column=6, padx=(0, 4))
         ttk.Button(parent, text=str(_("1")), width=3, command=_replace_one).grid(row=0, column=7, padx=2)
         ttk.Button(parent, text=str(_("Tout")), width=3, command=_replace_all).grid(row=0, column=8, padx=2)
+
+        # Stocker search_entry dans state pour y accéder depuis _toggle_search
+        state['search_entry'] = search_entry
 
     _build_search_bar(search_frame, frame)
 

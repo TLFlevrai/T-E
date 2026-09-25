@@ -2,11 +2,23 @@
 from pathlib import Path
 import threading
 from src.logger import setup_logger
+from src.paths import PathProvider, migrate_legacy_files, migrate_one_legacy_file
 
 logger = setup_logger(__name__)
 
+_provider = PathProvider()
+_provider.ensure_dirs()
+migrate_legacy_files(_provider)
+
+_DEFAULT_VERSION_FILE = _provider.data_dir() / "extractor_version.txt"
+if not _DEFAULT_VERSION_FILE.exists():
+    migrate_one_legacy_file(_provider, "extractor_version.txt", _DEFAULT_VERSION_FILE, "versions")
+
+
 class VersionManager:
-    def __init__(self, version_file="extractor_version.txt"):
+    def __init__(self, version_file=None):
+        if version_file is None:
+            version_file = _DEFAULT_VERSION_FILE
         self.version_file = Path(version_file)
         self._lock = threading.Lock()
         self.mapping = self.load_mapping()
@@ -88,9 +100,28 @@ class VersionManager:
                 self._save_mapping_locked()
                 logger.info("Compteur réinitialisé pour %s", folder_name)
 
-    # Anciennes méthodes conservées pour compatibilité
     def load_version(self):
+        """
+        .. deprecated:: 2.1.0
+            Utilisez :meth:`get_next_version` avec le nom du dossier.
+        """
+        import warnings
+        warnings.warn(
+            "load_version() est déprécié, utilisez get_next_version(folder_name)",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return 1
 
     def save_version(self, version):
+        """
+        .. deprecated:: 2.1.0
+            Utilisez :meth:`use_version` avec le nom du dossier et la version.
+        """
+        import warnings
+        warnings.warn(
+            "save_version() est déprécié, utilisez use_version(folder_name, version)",
+            DeprecationWarning,
+            stacklevel=2
+        )
         pass

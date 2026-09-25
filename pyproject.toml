@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "te"
-version = "2.0.0"
+version = "2.1.0"
 description = "TE : toolkit desktop multi-outils (extraction, conversion, vidéo, calculatrice, réseau, versions)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -64,7 +64,7 @@ domain = "messages"
 input_dirs = ["src"]
 output_file = "locale/messages.pot"
 project = "TE"
-version = "2.0.0"
+version = "2.1.0"
 msgid_bugs_address = ""
 copyright_holder = ""
 sort_output = true
@@ -75,8 +75,6 @@ python = "babel.extract:extract_python"
 
 [tool.babel.mappings]
 ".py" = { extractor = "python" }
-
-# Keywords for babel extraction (configured via command line or separate config)
 
 [tool.ruff]
 line-length = 100
@@ -202,8 +200,6 @@ exclude_lines = [
 ]
 precision = 2
 
-# Packaging : `src` est un vrai paquet (imports absolus `from src...`),
-# main.py reste à la racine et sert de point d'entrée console.
 [tool.setuptools]
 py-modules = ["main"]
 
@@ -212,8 +208,9 @@ where = ["."]
 include = ["src*"]
 exclude = ["tests*", "htmlcov*", "out*", "locale*"]
 
-[tool.setuptools.entry-points]
-console_scripts = [
-    "te = main:main",
-    "text-exporter = main:main",
-]
+[tool.setuptools.package-data]
+"src" = ["assets/*", "locale/**/*"]
+
+[project.entry-points.console_scripts]
+te = "main:main"
+text-exporter = "main:main"

@@ -140,6 +140,8 @@ class ThemeEditorDialog(BaseDialog):
             canvas.create_rectangle(0, 0, 30, 22, fill=color, outline='')
         except Exception:
             logger.debug("Erreur lors de la mise à jour de l'aperçu couleur", exc_info=True)
+
+    def _on_color_change(self, key):
         """Appelé quand la couleur change via l'entry."""
         var = self.color_vars[key]
         color = var.get()

@@ -8,6 +8,8 @@ from src.i18n import _
 from src.versioning import VersionManager
 from src.logger import setup_logger
 from src.services.interfaces import ICodeExtractor, IVersionManager
+from src.extractor.engine import ExtractionEngine, SUCCESS, FAILED, CANCELLED
+from src.extractor.context import ExtractionContext
 
 logger = setup_logger(__name__)
 
@@ -38,11 +40,14 @@ class ExtractionService:
         log_callback: Optional[Callable[[str], None]] = None,
         selected_files: Optional[List[str]] = None,
         cancel_event=None,
+        output_dir: Optional[Path] = None,
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
         """
         selected_files : liste de chemins relatifs (str) à extraire.
         Si None ou vide, on extrait tous les fichiers trouvés.
         cancel_event : threading.Event optionnel pour annuler l'extraction.
+        output_dir : dossier de sortie personnalisé (optionnel). Si fourni, 
+                     un sous-dossier 'out' sera créé dedans.
         
         Retourne : (success, output_filename, stats_dict)
         success peut être True (ok), False (échec) ou None (annulé).
@@ -54,42 +59,55 @@ class ExtractionService:
         merged_dict = default_options.model_dump()
         merged_dict.update(options)
         extractor_options = ExtractionOptions(**merged_dict)
-        
-        # Reconfigurer l'extracteur avec les nouvelles options
-        # (CodeExtractor accepte les options au constructeur)
-        self.extractor = self._create_extractor_with_options(extractor_options)
 
         folder_name = folder_path.name
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        next_version = self.version_manager.get_next_version(folder_name, output_dir=self.output_dir)
-        output_filename = self.output_dir / f"{folder_name}v{next_version}.txt"
+        
+        # Déterminer le dossier de sortie effectif
+        effective_output_dir = output_dir if output_dir is not None else self.output_dir
+        if output_dir is not None:
+            # Créer le sous-dossier 'out' dans le dossier personnalisé
+            effective_output_dir = effective_output_dir / "out"
+        
+        effective_output_dir.mkdir(parents=True, exist_ok=True)
+        next_version = self.version_manager.get_next_version(folder_name, output_dir=effective_output_dir)
+        output_filename = effective_output_dir / f"{folder_name}v{next_version}.txt"
 
-        success, py_count, json_count, txt_count, po_count, mo_count, html_count, css_count, js_count = self.extractor.extract_all(
-            str(folder_path),
-            str(output_filename),
-            progress_callback=progress_callback,
-            log_callback=log_callback,
-            selected_files=selected_files,
-            cancel_event=cancel_event,
+        # Construire le contexte avec les options fusionnées
+        selected_set = None
+        if selected_files is not None:
+            selected_set = set(Path(f).as_posix() for f in selected_files)
+
+        context = ExtractionContext(
+            folder_path=folder_path,
+            options=extractor_options,
+            output_path=output_filename,
+            selected_files=selected_set
         )
 
-        if success is None:
+        # Utiliser ExtractionEngine directement (le contexte porte déjà les options)
+        engine = ExtractionEngine(context)
+        if cancel_event is not None:
+            engine.set_cancel_event(cancel_event)
+        result = engine.run(progress_callback, log_callback)
+
+        if result == CANCELLED:
             # Extraction annulée : on ne consomme pas la version
             logger.info("Extraction annulée : %s", folder_name)
             return None, None, None
 
-        if success:
+        if result == SUCCESS:
             self.version_manager.use_version(folder_name, next_version)
-            stats = {
-                'py_count': py_count,
-                'json_count': json_count,
-                'txt_count': txt_count,
-                'po_count': po_count,
-                'mo_count': mo_count,
-                'html_count': html_count,
-                'css_count': css_count,
-                'js_count': js_count,
-                'total_files': py_count + json_count + txt_count + po_count + mo_count + html_count + css_count + js_count,
+            stats = context.stats
+            stats_dict = {
+                'py_count': stats.get('py', 0),
+                'json_count': stats.get('json', 0),
+                'txt_count': stats.get('txt', 0),
+                'po_count': stats.get('po', 0),
+                'mo_count': stats.get('mo', 0),
+                'html_count': stats.get('html', 0),
+                'css_count': stats.get('css', 0),
+                'js_count': stats.get('js', 0),
+                'total_files': stats.get('total', 0),
                 'output_filename': str(output_filename)
             }
 
@@ -101,7 +119,7 @@ class ExtractionService:
                     folder_name, Path(output_filename), log_callback)
 
             logger.info("Extraction réussie : %s", output_filename)
-            return True, str(output_filename), stats
+            return True, str(output_filename), stats_dict
         else:
             logger.error("Échec de l'extraction")
             return False, None, None
@@ -132,15 +150,6 @@ class ExtractionService:
         except Exception as e:
             logger.error("Erreur pendant l'archivage des anciennes versions : %s", e)
             return 0
-
-    def _create_extractor_with_options(self, options: ExtractionOptions) -> ICodeExtractor:
-        """
-        Crée un nouvel extracteur avec les options données.
-        Note: comme CodeExtractor n'a pas de setter pour options, on recrée l'instance.
-        Dans une vraie clean arch, l'extracteur serait stateless ou aurait un setter.
-        """
-        from src.extractor.extractor import CodeExtractor
-        return CodeExtractor(options=options)
 
     def clean_versions(self, archive: bool = False) -> str:
         if archive:

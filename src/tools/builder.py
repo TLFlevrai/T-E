@@ -519,7 +519,8 @@ def build_builder_view(shell) -> ttk.Frame:
     log_var = tk.StringVar()
     ttk.Entry(log_frame, textvariable=log_var, state='readonly').grid(
         row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 6))
-    ttk.Button(log_frame, text="...", width=3).grid(row=0, column=2)
+    browse_log_btn = ttk.Button(log_frame, text="...", width=3)
+    browse_log_btn.grid(row=0, column=2)
 
     # ── Destination ──
     dst_frame = ttk.Frame(frame)
@@ -531,7 +532,8 @@ def build_builder_view(shell) -> ttk.Frame:
     dst_var = tk.StringVar()
     ttk.Entry(dst_frame, textvariable=dst_var, state='readonly').grid(
         row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 6))
-    ttk.Button(dst_frame, text="...", width=3).grid(row=0, column=2)
+    browse_dst_btn = ttk.Button(dst_frame, text="...", width=3)
+    browse_dst_btn.grid(row=0, column=2)
 
     # ── Options ──
     opts_frame = ttk.LabelFrame(frame, text=str(_("Options")), padding=8)
@@ -713,7 +715,7 @@ def build_builder_view(shell) -> ttk.Frame:
                 frame.after(0, lambda: _on_progress(cur, total, path))
 
             def on_log_msg(msg, level='info'):
-                frame.after(0, lambda: _on_log_msg(msg, level))
+                frame.after(0, lambda: _log(msg))
 
             stats = build_project(
                 plan, dest,
@@ -845,17 +847,9 @@ def build_builder_view(shell) -> ttk.Frame:
 
 
     # ── Connexions ──
-    # Accessoirs boutons via lambda pour capture correcte
-    log_frame.winfo_toplevel()  # Assure que le toplevel existe
-
-    # Récupérer les boutons par leur position dans le layout
-    for child in log_frame.winfo_children():
-        if isinstance(child, ttk.Button):
-            child.config(command=_browse_log)
-
-    for child in dst_frame.winfo_children():
-        if isinstance(child, ttk.Button):
-            child.config(command=_browse_dst)
+    # Assignation directe des commandes aux boutons (références directes)
+    browse_log_btn.config(command=_browse_log)
+    browse_dst_btn.config(command=_browse_dst)
 
     build_btn.config(command=lambda: _do_build(dry_run=False))
     dry_btn.config(command=lambda: _do_build(dry_run=True))

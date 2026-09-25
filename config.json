@@ -3,7 +3,7 @@
   "received_subdir": "received",
   "archive_subdir": "old_out",
   "version_file": "extractor_version.txt",
-  "language": "fr",
+  "language": "en",
   "network": {
     "server_host": "127.0.0.1",
     "server_port": 50000,

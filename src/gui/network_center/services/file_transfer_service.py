@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from hashlib import sha256
 import hmac
 from typing import Callable, Optional
-from src.config import config
+from src.config import get_config
 from src.logger import setup_logger
+from src.network.protocol import CURRENT_VERSION, build_v1_header, write_v1_message
 
 logger = setup_logger(__name__)
 
@@ -30,9 +31,9 @@ class FileTransferService:
     def __init__(self):
         self._cancel_event = threading.Event()
         # Config auth
-        self.auth_enabled = config.get('network.auth_enabled', True)
-        self.auth_token = config.get('network.auth_token', 'change-me-secure-random-token').encode('utf-8')
-        self.port = config.get('network.server_port', 50000)
+        self.auth_enabled = get_config().get('network.auth_enabled', True)
+        self.auth_token = get_config().get('network.auth_token', 'change-me-secure-random-token').encode('utf-8')
+        self.port = get_config().get('network.server_port', 50000)
 
     def send_file(
         self,
@@ -77,40 +78,31 @@ class FileTransferService:
             sock.settimeout(self.TIMEOUT)
             sock.connect((peer_ip, self.port))
 
-            # 1. ENVOI AUTH TOKEN (si activé)
-            if self.auth_enabled:
-                auth_token = self._generate_auth_token()
-                sock.sendall(len(auth_token).to_bytes(2, 'big'))
-                sock.sendall(auth_token)
+            # Construire le payload v0 (format legacy)
+            v0_payload = self._build_v0_payload(filename, total_size, file_path, progress_callback)
 
-            # 2. Envoi header: nom (4 bytes len + bytes) + taille (8 bytes)
-            name_bytes = filename.encode('utf-8')
-            sock.sendall(len(name_bytes).to_bytes(4, 'big'))
-            sock.sendall(name_bytes)
-            sock.sendall(total_size.to_bytes(8, 'big'))
+            # Essayer d'abord le protocole v1
+            if self._try_send_v1(sock, v0_payload):
+                if result_callback:
+                    result_callback(TransferResult(success=True, hostname=peer_ip))
+                return
 
-            # 3. Envoi données par chunks (hash incrémental, sans charger le fichier en RAM)
-            hasher = sha256()
-            sent = 0
-            with open(file_path, 'rb') as f:
-                while sent < total_size and not self._cancel_event.is_set():
-                    chunk = f.read(self.CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    sock.sendall(chunk)
-                    hasher.update(chunk)
-                    sent += len(chunk)
-                    if progress_callback:
-                        progress_callback(sent, total_size)
-
-            if self._cancel_event.is_set():
-                raise InterruptedError("Transfert annulé")
-
-            # 4. Envoi hash
-            sock.sendall(hasher.digest())
-
-            if result_callback:
-                result_callback(TransferResult(success=True, hostname=peer_ip))
+            # Fallback v0 : le serveur n'a pas compris v1
+            # IMPORTANT : ne pas réutiliser la socket polluée par le magic v1 partiel
+            # → ouvrir une nouvelle connexion pour v0
+            logger.info("Fallback vers protocole v0 pour %s (nouvelle connexion)", peer_ip)
+            try:
+                sock.close()
+            except OSError:
+                pass
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(self.TIMEOUT)
+            sock.connect((peer_ip, self.port))
+            if self._send_v0(sock, v0_payload, progress_callback):
+                if result_callback:
+                    result_callback(TransferResult(success=True, hostname=peer_ip))
+            else:
+                self._notify_error(result_callback, "Échec de l'envoi (protocole non supporté)")
 
         except socket.timeout:
             self._notify_error(result_callback, "Le serveur distant ne répond pas (timeout)")
@@ -125,6 +117,57 @@ class FileTransferService:
                     sock.close()
                 except OSError:
                     pass
+
+    def _build_v0_payload(self, filename: str, total_size: int, file_path: Path,
+                          progress_callback: Optional[Callable[[int, int], None]]) -> bytes:
+        """Construit le payload complet au format v0 (sans l'enveloppe v1)."""
+        auth_token = self._generate_auth_token() if self.auth_enabled else b''
+        name_bytes = filename.encode('utf-8')
+
+        # Collecter les chunks du fichier pour le hash
+        hasher = sha256()
+        file_chunks = []
+        with open(file_path, 'rb') as f:
+            while True:
+                chunk = f.read(self.CHUNK_SIZE)
+                if not chunk:
+                    break
+                file_chunks.append(chunk)
+                hasher.update(chunk)
+                if progress_callback:
+                    progress_callback(hasher.digest().__sizeof__(), total_size)  # approximation
+
+        # Construire le payload v0
+        parts = []
+        if self.auth_enabled:
+            parts.append(len(auth_token).to_bytes(2, 'big'))
+            parts.append(auth_token)
+        parts.append(len(name_bytes).to_bytes(4, 'big'))
+        parts.append(name_bytes)
+        parts.append(total_size.to_bytes(8, 'big'))
+        parts.extend(file_chunks)
+        parts.append(hasher.digest())
+
+        return b''.join(parts)
+
+    def _try_send_v1(self, sock: socket.socket, v0_payload: bytes) -> bool:
+        """Tente d'envoyer via protocole v1. Retourne True si succès."""
+        try:
+            # write_v1_message envoie déjà le magic complet dans l'en-tête
+            return write_v1_message(sock, v0_payload, self.auth_enabled)
+        except Exception:
+            logger.debug("Échec envoi protocole v1, fallback v0", exc_info=True)
+            return False
+
+    def _send_v0(self, sock: socket.socket, v0_payload: bytes,
+                 progress_callback: Optional[Callable[[int, int], None]]) -> bool:
+        """Envoie le payload v0 brut (fallback)."""
+        try:
+            sock.sendall(v0_payload)
+            return True
+        except Exception:
+            logger.debug("Échec envoi protocole v0", exc_info=True)
+            return False
 
     def _notify_error(self, callback: Optional[Callable[[TransferResult], None]], msg: str):
         if callback:

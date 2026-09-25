@@ -83,6 +83,9 @@ class VersionExplorerDialog(BaseDialog):
             )
         except Exception:
             logger.debug("Erreur lors de la sauvegarde de la géométrie de la fenêtre", exc_info=True)
+
+    def _create_widgets(self):
+        """Crée les widgets de l'interface."""
         main = ttk.Frame(self, padding=10)
         main.pack(fill=tk.BOTH, expand=True)
 

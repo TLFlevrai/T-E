@@ -4,6 +4,9 @@ import socket
 import threading
 import time
 from src.config import get_config
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class DiscoveryService:
     """Découvre les autres instances du programme sur le réseau local."""
@@ -42,6 +45,7 @@ class DiscoveryService:
                 except socket.timeout:
                     continue
                 except Exception:
+                    logger.debug("Erreur lecture UDP", exc_info=True)
                     break
                 if not data or not addr or not addr[0]:
                     continue
@@ -53,11 +57,13 @@ class DiscoveryService:
                     try:
                         sock.sendto(reply, addr)
                     except OSError:
+                        logger.debug("Erreur envoi UDP reply", exc_info=True)
                         continue
                 elif data.startswith(self.reply_msg):
                     try:
                         parts = data.decode('utf-8', errors='replace').split(':', 1)
                     except Exception:
+                        logger.debug("Erreur décodage reply UDP", exc_info=True)
                         continue
                     if len(parts) == 2 and parts[1]:
                         hostname = parts[1][:255]

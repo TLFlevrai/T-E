@@ -1,33 +1,35 @@
 # src/gui/controller/main_controller.py
 """
 Contrôleur principal qui compose tous les sous-contrôleurs.
-Utilise la composition plutôt que l'héritage pour combiner les fonctionnalités.
+Utilise la composition pure (pas d'héritage) pour éviter les duplications d'état.
 """
 from __future__ import annotations
-from .base_controller import BaseController
 from .folder_controller import FolderController
 from .extraction_controller import ExtractionController
 from .server_controller import ServerController
 from .navigation_controller import NavigationController
 
 
-class MainController(BaseController):
+class MainController:
     """
     Contrôleur principal qui orchestre tous les sous-contrôleurs.
     
-    Hérite de BaseController pour les méthodes communes,
-    et délègue les responsabilités spécifiques aux sous-contrôleurs.
+    Composition pure : pas d'héritage de BaseController pour éviter
+    la duplication d'état (_selected_folder, selected_files, is_extracting).
+    Chaque sous-contrôleur gère son propre état.
     """
     
     def __init__(self, root, ui_widgets, service=None):
-        # Créer les sous-contrôleurs
+        # Créer les sous-contrôleurs (chacun a son propre état via BaseController)
         self._folder = FolderController(root, ui_widgets, service)
         self._extraction = ExtractionController(root, ui_widgets, service)
         self._server = ServerController(root, ui_widgets, service)
         self._navigation = NavigationController(root, ui_widgets, service)
         
-        # Appeler super() pour initialiser BaseController
-        super().__init__(root, ui_widgets, service)
+        # Exposer ui pour compatibilité (navigation_controller l'utilise via self.ui.controller)
+        self.ui = self._folder.ui
+        self.root = self._folder.root
+        self.service = self._folder.service
 
     # --- Propriétés avec délégation ---
     
@@ -56,6 +58,23 @@ class MainController(BaseController):
     def is_extracting(self, value):
         self._extraction.is_extracting = value
     
+    # --- Méthodes communes déléguées à FolderController (état partagé) ---
+    
+    def add_info(self, message: str):
+        return self._folder.add_info(message)
+    
+    def clear_info(self):
+        return self._folder.clear_info()
+    
+    def update_status(self, message: str, detail: str = None):
+        return self._folder.update_status(message, detail)
+    
+    def get_include_options(self) -> dict:
+        return self._folder.get_include_options()
+    
+    def get_extraction_options(self) -> dict:
+        return self._folder.get_extraction_options()
+    
     # --- Délégation FolderController ---
     def browse_folder(self):
         self._folder.browse_folder()
@@ -65,6 +84,14 @@ class MainController(BaseController):
     def select_recent_folder(self, folder_path):
         self._folder.select_recent_folder(folder_path)
         self._extraction.selected_folder = self._folder.selected_folder
+
+    def choose_output_dir(self):
+        """Délègue au FolderController pour choisir le dossier de sortie personnalisé."""
+        self._folder.choose_output_dir()
+
+    def _update_output_dir_label(self):
+        """Délègue au FolderController pour mettre à jour l'affichage du dossier de sortie."""
+        self._folder._update_output_dir_label()
     
     # --- Délégation ExtractionController ---
     def open_selection_dialog(self):
@@ -74,7 +101,7 @@ class MainController(BaseController):
     
     def extract_code(self):
         self._extraction.extract_code()
-
+    
     def cancel_extraction(self):
         """Demande l'annulation de l'extraction en cours."""
         self._extraction.cancel_extraction()

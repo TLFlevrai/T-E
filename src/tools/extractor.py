@@ -21,12 +21,15 @@ def build_extract_view(shell) -> ttk.Frame:
     frame = ttk.Frame(shell.workspace)
 
     ui = create_ui_widgets(get_config())
-    build_widgets(frame, ui)
 
+    # Créer le contrôleur AVANT build_widgets pour que ui.controller soit disponible
     controller = MainController(shell.root, ui, service=shell.service)
     ui.controller = controller
     controller.set_server(shell.server)
     controller.set_discovery(shell.discovery)
+
+    # Maintenant build_widgets peut utiliser ui.controller
+    build_widgets(frame, ui)
 
     ui.browse_btn.config(command=controller.browse_folder)
     ui.clear_btn.config(command=controller.clear_info)

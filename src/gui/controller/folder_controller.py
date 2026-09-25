@@ -26,6 +26,32 @@ class FolderController(BaseController):
         self.reset_selection()
         self._log_folder_stats()
 
+    def choose_output_dir(self):
+        """Ouvre un dialogue pour choisir le dossier de sortie personnalisé."""
+        folder = filedialog.askdirectory(
+            title=_("Choisir le dossier où créer le sous-dossier 'out' pour les extractions")
+        )
+        if not folder:
+            return
+        
+        self.ui.custom_output_dir.set(folder)
+        self._update_output_dir_label()
+        self.add_info(_("Dossier de sortie personnalisé : {}").format(folder))
+
+    def clear_output_dir(self):
+        """Efface le dossier de sortie personnalisé (retour au dossier par défaut)."""
+        self.ui.custom_output_dir.set("")
+        self._update_output_dir_label()
+        self.add_info(_("Dossier de sortie personnalisé effacé (retour au dossier par défaut)"))
+
+    def _update_output_dir_label(self):
+        """Met à jour l'affichage du dossier de sortie personnalisé."""
+        custom = self.ui.custom_output_dir.get().strip()
+        if custom:
+            self.ui.output_dir_label.config(text=_("Sortie : {}/out").format(custom))
+        else:
+            self.ui.output_dir_label.config(text=_("Sortie : dossier par défaut (projet/out)"))
+
     def select_recent_folder(self, folder_path):
         """Sélectionne un dossier depuis les emplacements récents."""
         if not os.path.exists(folder_path):

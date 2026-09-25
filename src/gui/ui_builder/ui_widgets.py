@@ -16,6 +16,9 @@ class UIWidgets:
     progress_var: tk.DoubleVar = field(default_factory=tk.DoubleVar)
     status_var: tk.StringVar = field(default_factory=lambda: tk.StringVar(value="Prêt"))
     
+    # Custom output directory (optional override)
+    custom_output_dir: tk.StringVar = field(default_factory=tk.StringVar)
+    
     # Extraction options (BooleanVars)
     include_subdirs: tk.BooleanVar = field(default_factory=lambda: tk.BooleanVar(value=True))
     show_file_paths: tk.BooleanVar = field(default_factory=lambda: tk.BooleanVar(value=True))

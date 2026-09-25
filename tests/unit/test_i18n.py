@@ -148,32 +148,12 @@ class TestReloadTranslations:
 class TestChangeLanguage:
     """Tests de changement de langue."""
     
-    def test_change_language_valid(self, tmp_path):
-        """Test changement de langue vers code valide."""
-        config_path = tmp_path / "config.json"
-        import json
-        config_data = {"language": "en", "output_dir": "out"}
-        with open(config_path, 'w') as f:
-            json.dump(config_data, f)
-        
+    def test_change_language_returns_bool(self):
+        """Test que change_language retourne un booléen."""
         import src.i18n as i18n_module
-        original_path = Path(i18n_module.__file__).parent.parent / "config.json"
-        # On ne peut pas facilement tester sans modifier le path
-        # Ce test est plus un test d'intégration
-    
-    def test_change_language_updates_config(self, tmp_path):
-        """Test que change_language écrit dans config.json."""
-        config_path = tmp_path / "config.json"
-        import json
-        config_data = {"language": "fr", "output_dir": "out"}
-        with open(config_path, 'w') as f:
-            json.dump(config_data, f)
-        
-        # Mock le chemin
-        import src.i18n as i18n_module
-        original_change_language = i18n_module.change_language
-        
-        # Ce test nécessite plus de setup d'intégration
+        # Sans config.json valide, ça peut échouer mais doit retourner bool
+        result = i18n_module.change_language("en")
+        assert isinstance(result, bool)
 
 
 class TestPgettext:

@@ -60,6 +60,13 @@ class ExtractionController(BaseController):
         options = self.get_extraction_options()
         selected = self.selected_files if self.selected_files else None
 
+        # Récupérer le dossier de sortie personnalisé si défini
+        custom_output_dir = None
+        custom_path = self.ui.custom_output_dir.get().strip()
+        if custom_path:
+            from pathlib import Path
+            custom_output_dir = Path(custom_path)
+
         self._cancel_event = threading.Event()
         self.update_status(_("Extraction en cours..."))
         self.add_info(_("\n--- Extraction en cours ---") + (" (PDF)" if export_pdf else ""))
@@ -73,9 +80,9 @@ class ExtractionController(BaseController):
                     options=options,
                     selected_files=selected,
                     progress_callback=None,  # Maintenant géré dans run_extraction
-                    log_callback=None,
                     export_pdf=export_pdf,
                     cancel_event=self._cancel_event,
+                    output_dir=custom_output_dir,
                 )
 
                 self.root.after(0, lambda s=success, f=output_filename, st=stats:

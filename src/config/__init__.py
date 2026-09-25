@@ -6,12 +6,19 @@ from pathlib import Path
 from .schema import AppConfig, ExtractionOptions, NetworkConfig, GuiConfig
 
 from src.logger import setup_logger
+from src.paths import PathProvider, migrate_legacy_files, migrate_one_legacy_file
+
 logger = setup_logger(__name__)
 
 __all__ = ['AppConfig', 'ExtractionOptions', 'NetworkConfig', 'GuiConfig', 'get_config']
 
-# Chemin vers config.json à la racine du projet
-CONFIG_PATH = Path(__file__).parent.parent.parent / "config.json"
+_provider = PathProvider()
+_provider.ensure_dirs()
+migrate_legacy_files(_provider)
+
+CONFIG_PATH = _provider.config_dir() / "config.json"
+if not CONFIG_PATH.exists():
+    migrate_one_legacy_file(_provider, "config.json", CONFIG_PATH, "configuration")
 
 
 class _Config:

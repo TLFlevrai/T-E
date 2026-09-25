@@ -17,7 +17,7 @@ _TYPE_COLORS = {
     'error': ('#dc3545', '#ffffff'),
 }
 
-_STACK = []  # toasts actifs, pour les empiler
+_STOCK = []  # toasts actifs, pour les empiler
 
 
 def show_toast(
@@ -35,6 +35,14 @@ def show_toast(
         _Toast(root, message, type_, duration_ms, parent)
     except Exception as exc:
         logger.debug("Erreur affichage toast : %s", exc)
+
+
+def _reposition_all():
+    """Empile les toasts en remontant."""
+    offset = 0
+    for toast in _STOCK:
+        toast._place_with_offset(offset)
+        offset += toast.win.winfo_height() + 8
 
 
 class _Toast:
@@ -72,8 +80,8 @@ class _Toast:
         label.bind('<Button-1>', lambda e: self.close())
 
         # Empiler au-dessus des toasts précédents
-        _STACK.append(self)
-        self._reposition_all()
+        _STOCK.append(self)
+        _reposition_all()
 
         # Fermeture automatique avec fondu
         self.win.after(duration_ms, self._fade_out)
@@ -83,13 +91,6 @@ class _Toast:
         x = self.root.winfo_rootx() + self.root.winfo_width() - self.win.winfo_width() - 20
         y = self.root.winfo_rooty() + self.root.winfo_height() - self.win.winfo_height() - 20
         self.win.geometry(f"+{x}+{y}")
-
-    def _reposition_all(self):
-        """Empile les toasts en remontant."""
-        offset = 0
-        for toast in _STACK:
-            toast._place_with_offset(offset)
-            offset += toast.win.winfo_height() + 8
 
     def _place_with_offset(self, offset: int):
         x = self.root.winfo_rootx() + self.root.winfo_width() - self.win.winfo_width() - 20
@@ -106,14 +107,15 @@ class _Toast:
             self.win.attributes('-alpha', alpha)
             self.win.after(40, lambda: self._fade_out(step + 1))
         except Exception:
+            logger.debug("Erreur lors du fondu de sortie", exc_info=True)
             self.close()
 
     def close(self):
         try:
-            if self in _STACK:
-                _STACK.remove(self)
+            if self in _STOCK:
+                _STOCK.remove(self)
             self.win.destroy()
             # Ré-aligner les toasts restants
-            self._reposition_all()
+            _reposition_all()
         except Exception as exc:
-            logger.debug("Erreur fermeture toast : %s", exc)
+            logger.debug("Erreur fermeture toast : %s", exc, exc_info=True)

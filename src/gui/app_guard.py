@@ -103,6 +103,7 @@ class UIThreadDispatcher:
         try:
             self.root.after(10, self._drain)
         except Exception:
+            logger.debug("Erreur planification UI dispatcher", exc_info=True)
             self._scheduled = False
 
     def _drain(self):

@@ -56,6 +56,7 @@ _CONSTANTS = {
     'e': math.e,
     'phi': (1 + math.sqrt(5)) / 2,
     'sqrt2': math.sqrt(2),
+    'tau': 2 * math.pi,
     'math.pi': math.pi,
     'math.e': math.e,
 }

@@ -39,9 +39,10 @@ def _format_eta(seconds: float) -> str:
 
 
 def run_extraction(controller, service, selected_folder, options, selected_files,
-                    progress_callback: ProgressCallback, log_callback: LogCallback,
+                    progress_callback: ProgressCallback,
                     export_pdf: bool = False,
-                    cancel_event=None) -> Tuple[Optional[bool], Optional[str], Optional[dict]]:
+                    cancel_event=None,
+                    output_dir: Optional[Path] = None) -> Tuple[Optional[bool], Optional[str], Optional[dict]]:
     """
     Exécute l'extraction via le service dans le THREAD APPELANT (worker).
     Toutes les mutations de l'interface sont marshallées sur le thread UI
@@ -113,6 +114,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             log_callback=enhanced_log_callback,
             selected_files=selected_files,
             cancel_event=cancel_event,
+            output_dir=output_dir,
         )
 
         if success is None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from src.i18n import _, pgettext
-from src.gui.ui_builder.tooltip import add_lazy_tooltip
+from src.ui.tooltips import add_lazy_tooltip
 
 
 class Toolbar:

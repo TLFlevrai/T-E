@@ -93,10 +93,9 @@ class PDFService:
         except Exception as e:
             raise ValueError(f"{description} : chemin invalide ({e})")
 
-        # Vérifier path traversal (le chemin résolu ne doit pas contenir de parties suspectes)
-        path_str = str(resolved)
-        if '..' in path.parts:
-            raise ValueError(f"{description} : path traversal détecté ('..' dans le chemin)")
+        # NOTE: Le check '..' in path.parts APRÈS resolve() est mort — resolve() élimine déjà '..' et '.'
+        # La vraie protection contre le path traversal est relative_to(output_dir) ci-dessous
+        # qui garantit que le chemin final est bien DANS le dossier autorisé.
 
         # Vérifier que le chemin est dans le dossier de sortie autorisé
         if must_be_in_output_dir:

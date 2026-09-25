@@ -153,10 +153,10 @@ class TestConvertBase:
         assert _convert_base(255, 10, 8) == "377"
 
     def test_hex_to_dec(self):
-        assert _convert_base(0xFF, 16, 10) == "255"
+        assert _convert_base("FF", 16, 10) == "255"
 
     def test_bin_to_dec(self):
-        assert _convert_base(0b1010, 2, 10) == "10"
+        assert _convert_base("1010", 2, 10) == "10"
 
     def test_zero(self):
         assert _convert_base(0, 10, 2) == "0"

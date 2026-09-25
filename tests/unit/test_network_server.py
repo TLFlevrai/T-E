@@ -140,14 +140,18 @@ def _send(env, filename: str, payload: bytes, token: str = None,
     if corrupt_hash:
         digest = bytes(32)
 
-    with socket.create_connection((env['server'].host, env['server'].port), timeout=5) as s:
-        s.sendall(len(auth).to_bytes(2, 'big'))
-        s.sendall(auth)
-        s.sendall(len(name_bytes).to_bytes(4, 'big'))
-        s.sendall(name_bytes)
-        s.sendall(size.to_bytes(8, 'big'))
-        s.sendall(payload)
-        s.sendall(digest)
+    try:
+        with socket.create_connection((env['server'].host, env['server'].port), timeout=5) as s:
+            s.sendall(len(auth).to_bytes(2, 'big'))
+            s.sendall(auth)
+            s.sendall(len(name_bytes).to_bytes(4, 'big'))
+            s.sendall(name_bytes)
+            s.sendall(size.to_bytes(8, 'big'))
+            s.sendall(payload)
+            s.sendall(digest)
+    except ConnectionResetError:
+        # Le serveur a fermé la connexion (ex: auth échouée) - c'est attendu
+        pass
 
 
 def _wait_for(predicate, timeout=3.0) -> bool:
@@ -180,7 +184,8 @@ class TestTransferIntegration:
         _send(server_env, 'evil.txt', b'data', token='wrong-token')
         assert _wait_for(lambda: any(t == 'rejected' and d.get('reason') == 'auth_failed'
                                      for t, d in server_env['events']), timeout=5)
-        assert not server_env['received_dir'].exists() or not list(server_env['received_dir'].iterdir())
+        # received_dir est créé au démarrage du serveur ; vérifier qu'il reste vide
+        assert not list(server_env['received_dir'].iterdir())
 
     def test_bad_extension_rejected(self, server_env):
         _send(server_env, 'program.exe', b'MZ...')
@@ -218,7 +223,7 @@ class TestFailClosedOnDefaultToken:
             'network': {
                 'server_host': '0.0.0.0',
                 'server_port': _free_port(),
-                'discovery_port': 0,
+                'discovery_port': 50001,
                 'auth_enabled': True,
                 'auth_token': 'change-me-secure-random-token',
             },

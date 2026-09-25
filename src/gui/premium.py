@@ -12,13 +12,6 @@ from src.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-# Map nos thèmes logiques vers les thèmes ttkbootstrap
-TTKBOOTSTRAP_THEMES = {
-    'light': 'litera',   # clair moderne
-    'dark': 'darkly',    # sombre moderne
-    'default': 'litera',
-}
-
 
 def setup_dpi_awareness() -> bool:
     """Active le scaling High-DPI sur Windows (rendu net sur écrans 4K)."""
@@ -70,20 +63,4 @@ def premium_available() -> bool:
         import ttkbootstrap  # noqa: F401
         return True
     except ImportError:
-        return False
-
-
-def apply_premium_theme(theme_name: str) -> bool:
-    """
-    Applique un thème ttkbootstrap. Retourne False si non disponible ou échec.
-    """
-    if not premium_available():
-        return False
-    try:
-        import ttkbootstrap
-        theme = TTKBOOTSTRAP_THEMES.get(theme_name, theme_name)
-        style = ttkbootstrap.Style(theme=theme)
-        return True
-    except Exception as e:
-        logger.warning("Échec d'application du thème ttkbootstrap '%s' : %s", theme_name, e)
         return False

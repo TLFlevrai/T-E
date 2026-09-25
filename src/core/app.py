@@ -10,16 +10,22 @@ from __future__ import annotations
 import tkinter as tk
 from pathlib import Path
 
-from src.config import config
-from src.extractor.extractor import CodeExtractor
+from src.config import get_config
 from src.i18n import setup_i18n
 from src.logger import setup_logger
 from src.network.discovery import DiscoveryService
 from src.network.server import ReceiveServer
+from src.paths import PathProvider
 from src.services.extraction_service import ExtractionService
 from src.versioning import VersionManager
 
 logger = setup_logger(__name__)
+
+_provider = PathProvider()
+_provider.ensure_dirs()
+
+# Répertoire racine du projet (où se trouve main.py)
+_PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 class Application:
@@ -81,35 +87,62 @@ class Application:
 
     def _create_extraction_service(self) -> ExtractionService:
         """Composition Root pour le service d'extraction (Domain/Use-Case layer)."""
-        output_dir = Path(config.get('output_dir', 'out'))
-        version_file = config.get('version_file', 'extractor_version.txt')
+        output_dir = self._resolve_output_dir()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        version_file = get_config().get('version_file', 'extractor_version.txt')
 
         version_manager = VersionManager(version_file)
-        code_extractor = CodeExtractor()
+        
+        # Adapter minimal pour satisfaire l'interface ICodeExtractor
+        # Le service utilise maintenant ExtractionEngine directement
+        class _ExtractorAdapter:
+            def find_files(self, folder: str):
+                from src.extractor.file_discovery import FileDiscoveryService
+                from src.config import ExtractionOptions
+                return FileDiscoveryService(ExtractionOptions()).find_files(folder)
+            
+            def generate_project_structure(self, folder: str) -> str:
+                from src.extractor.structure_generator import generate_project_structure
+                from src.config import ExtractionOptions
+                return generate_project_structure(folder, ExtractionOptions())
+            
+            def extract_all(self, *args, **kwargs):
+                raise NotImplementedError("Utilisez ExtractionEngine directement")
+        
+        extractor_adapter = _ExtractorAdapter()
 
         return ExtractionService(
-            extractor=code_extractor,
+            extractor=extractor_adapter,
             version_manager=version_manager,
             output_dir=output_dir,
         )
 
+    def _resolve_output_dir(self) -> Path:
+        """Résout le dossier de sortie : relatif à la racine du projet si relatif, absolu sinon."""
+        output_dir_str = get_config().get('output_dir', 'out')
+        output_path = Path(output_dir_str)
+        if output_path.is_absolute():
+            return output_path
+        return _PROJECT_ROOT / output_path
+
     def _start_network_services(self) -> None:
         """Démarre les services réseau avec configuration centralisée."""
         try:
-            output_dir = Path(config.get('output_dir', 'out'))
-            received_subdir = config.get('received_subdir', 'received')
+            output_dir = self._resolve_output_dir()
+            output_dir.mkdir(parents=True, exist_ok=True)
+            received_subdir = get_config().get('received_subdir', 'received')
             received_dir = output_dir / received_subdir
 
             self.server = ReceiveServer(
-                host=config.get('network.server_host', '127.0.0.1'),
-                port=config.get('network.server_port', 50000),
+                host=get_config().get('network.server_host', '127.0.0.1'),
+                port=get_config().get('network.server_port', 50000),
                 received_dir=received_dir,
             )
             self.server.start()
             logger.info("Serveur réseau démarré sur %s:%s", self.server.host, self.server.port)
 
             self.discovery = DiscoveryService(
-                listen_port=config.get('network.discovery_port', 50001),
+                listen_port=get_config().get('network.discovery_port', 50001),
             )
             self.discovery.start_listener()
             logger.info("Service de découverte réseau démarré")

@@ -44,6 +44,23 @@ def build_widgets(parent, ui: UIWidgets):
     tooltip = add_lazy_tooltip(browse_btn, "Sélectionner le dossier à scanner (Ctrl+O)")
     ui._lazy_tooltips.append(tooltip)
 
+    browse_btn.config(command=ui.controller.browse_folder)
+    
+    # --- Bouton dossier de sortie personnalisé ---
+    output_dir_btn = ttk.Button(folder_card, text=str(LazyString("Dossier de sortie...")),
+                                style='AppGhost.TButton')
+    output_dir_btn.grid(row=1, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=(6, 0))
+    ui.output_dir_btn = output_dir_btn
+    register_lazy_widget(ui, output_dir_btn, "Dossier de sortie...")
+    tooltip = add_lazy_tooltip(output_dir_btn, "Choisir un dossier où créer le sous-dossier 'out' pour les extractions")
+    ui._lazy_tooltips.append(tooltip)
+    output_dir_btn.config(command=ui.controller.choose_output_dir)
+
+    # --- Affichage dossier de sortie personnalisé ---
+    ui.output_dir_label = ttk.Label(folder_card, text="", font=('Segoe UI', 8), foreground='#888888')
+    ui.output_dir_label.grid(row=2, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=(2, 0))
+    ui.controller._update_output_dir_label()
+
     # --- Actions : bouton principal + secondaires discrets ---
     action_frame = ttk.Frame(main_frame)
     action_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 12))

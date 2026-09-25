@@ -332,11 +332,17 @@ def select_video_stream(info: VideoInfo, max_height: int = 360) -> StreamFormat:
     1. Flux muxés (vidéo + audio) à la meilleure résolution ≤ max_height
     2. Si aucun muxé : flux adaptatif vidéo ≤ max_height
 
+    Si max_height=0, aucune limite (meilleure qualité disponible).
+
     Raises:
         FormatUnavailableError: Si aucun flux vidéo convenable n'est trouvé.
     """
-    # Chercher d'abord les flux muxés (contiennent déjà l'audio)
-    muxed = [s for s in info.video_streams if s.height > 0 and s.height <= max_height]
+    # max_height=0 signifie pas de limite
+    if max_height <= 0:
+        muxed = [s for s in info.video_streams if s.height > 0]
+    else:
+        # Chercher d'abord les flux muxés (contiennent déjà l'audio)
+        muxed = [s for s in info.video_streams if s.height > 0 and s.height <= max_height]
     # Trier par hauteur décroissante, puis par bitrate décroissant
     muxed.sort(key=lambda s: (s.height, s.bitrate), reverse=True)
 
@@ -344,8 +350,9 @@ def select_video_stream(info: VideoInfo, max_height: int = 360) -> StreamFormat:
         return muxed[0]
 
     # Aucun flux muxé trouvé
+    limit_str = f"{max_height}p ou moins" if max_height > 0 else "disponible"
     raise FormatUnavailableError(
-        f"Aucun flux vidéo disponible en {max_height}p ou moins. "
+        f"Aucun flux vidéo disponible en {limit_str}. "
         f"Résolutions disponibles : {_available_resolutions(info)}"
     )
 

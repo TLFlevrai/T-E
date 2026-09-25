@@ -16,12 +16,6 @@ class BaseController:
     def __init__(self, root, ui_widgets: UIWidgets, service: Optional[ExtractionService] = None):
         self.root = root
         self.ui = ui_widgets
-        if service is None:
-            logger.warning(
-                "BaseController créé sans ExtractionService — "
-                "le service sera créé proprement par le sous-contrôleur."
-            )
-            service = ExtractionService()
         self.service = service
         # Utiliser un attribut privé pour éviter les conflits avec les setters
         self._selected_folder = ""

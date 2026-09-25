@@ -54,6 +54,7 @@ class CommandPaletteDialog(tk.Toplevel):
         self.title(_("Commandes"))
         self.transient(shell.root)
         self.resizable(False, False)
+        self.grab_set()
 
         self._all_items: list[_PaletteItem] = []
         self._visible_items: list[_PaletteItem] = []
@@ -189,4 +190,5 @@ class CommandPaletteDialog(tk.Toplevel):
 
 def open_command_palette(shell: Any):
     """Ouvre la palette de commandes (Ctrl+K)."""
-    CommandPaletteDialog(shell)
+    dialog = CommandPaletteDialog(shell)
+    shell.root.wait_window(dialog)

@@ -15,14 +15,19 @@ from src.gui.app_guard import safe_after
 from src.i18n import _
 
 _VIDEO_QUALITIES = [
-    ("Meilleure qualité (≤ 360p)", 360),
+    ("Meilleure qualité disponible", 0),  # 0 = pas de limite
+    ("1080p (Full HD)", 1080),
+    ("720p (HD)", 720),
+    ("480p", 480),
     ("360p", 360),
+    ("240p", 240),
+    ("144p", 144),
 ]
 
 
 def build_youtube_view(shell) -> ttk.Frame:
     """Construit la vue YouTube intégrée au workspace."""
-    from src.gui.ui_builder.tooltip import add_tooltip
+    from src.ui.tooltips import add_tooltip
 
     frame = ttk.Frame(shell.workspace, padding=12)
 
@@ -159,7 +164,7 @@ class _YouTubeView:
         max_height = 360
         for name, height in _VIDEO_QUALITIES:
             if name == quality_label:
-                max_height = height or 360
+                max_height = height
                 break
 
         return {

@@ -133,6 +133,7 @@ def _build_document_tab(parent) -> ttk.Frame:
 # ═══════════════════════════════════════════════════════════════════════════
 
 _VIDEO_FORMATS = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp', '.ogv', '.mpeg', '.mpg']
+_IMAGE_FORMATS = ['.png', '.jpg', '.jpeg', '.bmp', '.webp']
 
 def _build_video_tab(parent) -> ttk.Frame:
     frame = ttk.Frame(parent, padding=12)
@@ -238,8 +239,6 @@ def _build_video_tab(parent) -> ttk.Frame:
 # ═══════════════════════════════════════════════════════════════════════════
 # Onglet Images
 # ═══════════════════════════════════════════════════════════════════════════
-
-_IMAGE_FORMATS = ['.png', '.jpg', '.jpeg', '.bmp', '.webp']
 
 def _build_image_tab(parent) -> ttk.Frame:
     frame = ttk.Frame(parent, padding=12)
@@ -505,14 +504,14 @@ def _build_batch_tab(parent) -> ttk.Frame:
                 for i, src in enumerate(files):
                     safe_after(frame, 0, lambda v=(i + 1) / total * 100: progress.config(value=v))
                     try:
+                        dst = src.with_suffix(fmt)
                         if mode == "image":
-                            _convert_single_image(src, src.with_suffix(fmt))
+                            _convert_single_image(src, dst, log_text=log_text)
                         elif mode == "txt_to_pdf":
-                            _convert_txt_to_pdf(src, src.with_suffix('.pdf'), 'utf-8', log_text)
+                            _convert_txt_to_pdf(src, dst, 'utf-8', log_text)
                         elif mode == "audio":
-                            _convert_audio_file(src, src.with_suffix('.wav'), log_text)
+                            _convert_audio_file(src, dst, log_text)
                         ok += 1
-                        _log(log_text, f"  ✓ {src.name}")
                     except Exception as exc:
                         fail += 1
                         _log(log_text, f"  ✗ {src.name}: {exc}")
@@ -556,10 +555,14 @@ def _log(log_text: tk.Text, msg: str):
 
 
 def _do_log(log_text: tk.Text, msg: str):
-    log_text.configure(state='normal')
-    log_text.insert(tk.END, msg + "\n")
-    log_text.see(tk.END)
-    log_text.configure(state='disabled')
+    try:
+        log_text.configure(state='normal')
+        log_text.insert(tk.END, msg + "\n")
+        log_text.see(tk.END)
+        log_text.configure(state='disabled')
+    except tk.TclError:
+        # Widget détruit, on ignore silencieusement
+        pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -641,7 +644,7 @@ def _convert_json_to_txt(src: Path, dst: Path, encoding: str, indent: bool, log_
     dst.write_text(formatted, encoding=encoding)
 
 
-def _convert_single_image(src: Path, dst: Path, resize=None):
+def _convert_single_image(src: Path, dst: Path, resize=None, log_text=None):
     from PIL import Image
     img = Image.open(src)
     if resize:
@@ -649,21 +652,35 @@ def _convert_single_image(src: Path, dst: Path, resize=None):
     if dst.suffix in ('.jpg', '.jpeg') and img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
     img.save(dst)
+    if log_text:
+        _log(log_text, f"  ✓ {src.name} → {dst.name}")
 
 
-def _convert_audio_file(src: Path, dst: Path, log_text):
+def _convert_audio_file(src: Path, dst: Path, log_text=None):
     """Convertit entre MP3, WAV, OGG via pydub (ffmpeg requis en arrière-plan)."""
+    # Si même format, copier simplement
+    if src.suffix.lower() == dst.suffix.lower():
+        import shutil
+        shutil.copy2(src, dst)
+        if log_text:
+            _log(log_text, f"  ✓ {src.name} → {dst.name} (copié, même format)")
+        return
+    
     try:
         from pydub import AudioSegment
         fmt = dst.suffix.lstrip('.')
         audio = AudioSegment.from_file(str(src))
         audio.export(str(dst), format=fmt)
+        if log_text:
+            _log(log_text, f"  ✓ {src.name} → {dst.name}")
     except ImportError:
         import subprocess
         cmd = ['ffmpeg', '-y', '-i', str(src), str(dst)]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             raise RuntimeError(result.stderr or "Erreur ffmpeg inconnue")
+        if log_text:
+            _log(log_text, f"  ✓ {src.name} → {dst.name}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

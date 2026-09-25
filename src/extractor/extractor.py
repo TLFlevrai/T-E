@@ -1,5 +1,6 @@
 # src/extractor/extractor.py
 from __future__ import annotations
+import warnings
 from pathlib import Path
 from typing import Optional, List, Callable
 from src.config import ExtractionOptions
@@ -16,7 +17,21 @@ LogCallback = Callable[[str], None]
 
 
 class CodeExtractor:
+    """
+    Façade de compatibilité pour l'extraction de code.
+    
+    .. deprecated:: 2.1.0
+        Utilisez directement :class:`ExtractionEngine` avec un :class:`ExtractionContext`
+        pour un meilleur contrôle et performance. Cette classe sera supprimée dans une
+        version future.
+    """
+    
     def __init__(self, options: Optional[ExtractionOptions] = None, **overrides):
+        warnings.warn(
+            "CodeExtractor est déprécié, utilisez ExtractionEngine + ExtractionContext",
+            DeprecationWarning,
+            stacklevel=2
+        )
         if options is None:
             base = ExtractionOptions()
         else:
