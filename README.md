@@ -1,6 +1,6 @@
 # TE — Toolkit Multi-Outils
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.0.3-blue)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-orange)
 
