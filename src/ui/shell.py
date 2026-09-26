@@ -12,7 +12,7 @@ import tkinter as tk
 from pathlib import Path
 
 from src.config import get_config
-from src.gui.theme import apply_theme, get_color
+from src.gui.theme import apply_theme, get_color, get_font
 from src.i18n import _, register_reload_callback, unregister_reload_callback
 from src.logger import setup_logger
 
@@ -60,7 +60,7 @@ class TEShell:
         self._workspace_toggle = tk.Button(
             self.workspace,
             text="◀",
-            font=('Segoe UI', 11),
+            font=get_font('body'),
             bg=get_color('surface'),
             fg=get_color('fg'),
             activebackground=get_color('surface_alt'),

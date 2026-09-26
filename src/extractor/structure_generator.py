@@ -7,7 +7,7 @@ from src.config import ExtractionOptions
 from src.extractor.file_discovery import FileDiscoveryService
 
 
-def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
+def generate_project_structure(folder: str, options: ExtractionOptions, context=None) -> str:
     """
     Génère la structure du projet en s'appuyant sur FileDiscoveryService.
     Inclut TOUS les fichiers trouvés dans le dossier (code, images, vidéos,
@@ -16,8 +16,24 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
     """
     folder_path = Path(folder)
     discovery = FileDiscoveryService(options)
-    # all_files=True : vidéos et images incluses, sans filtre d'extension
-    files, dirs = discovery.find_all_paths(folder, all_files=True)
+    # FIX BUG #3 : utiliser _walk directement pour obtenir la taille précalculée
+    # au lieu de refaire un stat() sur chaque fichier via find_all_paths
+    walk_items = list(discovery._walk(folder_path, collect_dirs=True, all_files=True))
+
+    # FIX BUG #12 : compter les dossiers et packages pour les statistiques
+    if context is not None:
+        dirs_set = set()
+        packages_set = set()
+        for item in walk_items:
+            if item.kind == 'dir':
+                dirs_set.add(item.rel_path)
+                # Vérifier si c'est un package Python (__init__.py)
+                init_file = folder_path / item.rel_path / '__init__.py'
+                if init_file.exists():
+                    packages_set.add(item.rel_path)
+        # Ne pas compter la racine comme dossier
+        context.num_dirs = max(0, len(dirs_set))
+        context.num_packages = len(packages_set)
 
     lines = []
     lines.append("STRUCTURE DU PROJET")
@@ -51,28 +67,28 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
     }
 
     # Construire l'arbre complet (dossiers + fichiers) trié
-    # Structure: {parent_path: {dirs: [names], files: [(name, ext, size)]}}
+    # Structure: {parent_path: {dirs: [names], files: [(name, ext, size_str)]}}
     from collections import defaultdict
     tree = defaultdict(lambda: {'dirs': [], 'files': []})
 
-    # Ajouter les dossiers
-    for d in sorted(dirs):
-        parent = d.parent
-        parent_str = str(parent)
-        if parent_str == '.':
-            parent_str = ''
-        tree[parent_str]['dirs'].append(d.name)
-
-    # Ajouter les fichiers
-    for full_path, rel_path, ext in files:
-        parent = str(rel_path.parent)
-        if parent == '.':
-            parent = ''
-        try:
-            size_str = human_size(full_path.stat().st_size)
-        except Exception:
-            size_str = "?"
-        tree[parent]['files'].append((rel_path.name, ext, size_str))
+    # Parcourir les items du walk pour remplir l'arbre
+    for item in walk_items:
+        if item.kind == 'dir':
+            parent = item.rel_path.parent
+            parent_str = str(parent)
+            if parent_str == '.':
+                parent_str = ''
+            tree[parent_str]['dirs'].append(item.rel_path.name)
+        elif item.kind == 'file':
+            parent = str(item.rel_path.parent)
+            if parent == '.':
+                parent = ''
+            # FIX BUG #3 : utiliser item.size précalculé au lieu de full_path.stat()
+            if item.size >= 0:
+                size_str = human_size(item.size)
+            else:
+                size_str = "?"
+            tree[parent]['files'].append((item.rel_path.name, item.extension, size_str))
 
     # Trier les entrées
     for parent in tree:
@@ -80,7 +96,7 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
         tree[parent]['files'].sort(key=lambda x: x[0])
 
     # Parcours récursif pour affichage
-    def walk_display(current_path: str, prefix: str, is_last: bool):
+    def walk_display(current_path: str, prefix: str):
         node = tree.get(current_path, {'dirs': [], 'files': []})
         entries = []
 
@@ -101,8 +117,7 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
                 lines.append(f"{prefix}{connector}📁 {entry}/")
                 walk_display(
                     str(Path(current_path) / entry) if current_path else entry,
-                    new_prefix,
-                    is_last_entry
+                    new_prefix
                 )
             else:
                 name, ext, size_str = entry
@@ -110,7 +125,7 @@ def generate_project_structure(folder: str, options: ExtractionOptions) -> str:
                 lines.append(f"{prefix}{connector} {icon} {name} ({size_str})")
 
     # Démarrer depuis la racine
-    walk_display('', '', True)
+    walk_display('', '')
 
     lines.append("\n" + "=" * 80 + "\n")
     return "\n".join(lines)

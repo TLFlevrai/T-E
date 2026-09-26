@@ -14,6 +14,7 @@ from typing import Any
 from src.core.events import events
 from src.core.tool_registry import registry
 from src.i18n import _
+from src.gui.theme import get_font
 from src.ui.autoscroll import AutoScrollFrame
 from src.ui.tooltips import ToolTipContent, add_lazy_rich_tooltip
 
@@ -81,16 +82,16 @@ class Workspace(ttk.Frame):
         inner.columnconfigure(0, weight=1)
 
         ttk.Label(inner, text=f"{tool.icon}  {_(tool.name)}",
-                  style='Card.TLabel', font=('Segoe UI', 20, 'bold')).grid(
+                  style='Card.TLabel', font=get_font('h1')).grid(
             row=0, column=0, pady=(0, 12))
 
         ttk.Label(inner, text=_(tool.description),
-                  style='Card.TLabel', font=('Segoe UI', 11), justify=tk.CENTER).grid(
+                  style='Card.TLabel', font=get_font('body'), justify=tk.CENTER).grid(
             row=1, column=0, pady=(0, 8))
 
         if tool.shortcut:
             ttk.Label(inner, text=f"{_('Raccourci')} : {tool.shortcut}",
-                      style='Card.TLabel', font=('Segoe UI', 9)).grid(
+                      style='Card.TLabel', font=get_font('caption')).grid(
                 row=2, column=0, pady=(0, 16))
 
         open_btn = ttk.Button(inner, text=f"{_('Ouvrir')} {_(tool.name)}",

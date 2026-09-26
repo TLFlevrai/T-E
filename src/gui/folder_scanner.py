@@ -3,21 +3,8 @@ from __future__ import annotations
 from src.extractor.file_discovery import FileDiscoveryService
 from src.config import ExtractionOptions
 
-def scan_folder(folder, ui):
-    options = ExtractionOptions(
-        include_json=ui.include_json.get(),
-        include_subdirs=ui.include_subdirs.get(),
-        include_txt=ui.include_txt.get(),
-        include_po=ui.include_po.get(),
-        include_mo=ui.include_mo.get(),
-        include_html=ui.include_html.get(),
-        include_css=ui.include_css.get(),
-        include_js=ui.include_js.get(),
-        ignore_init=ui.ignore_init.get(),
-        ignore_git=ui.ignore_git.get(),
-        ignore_pycache=ui.ignore_pycache.get()
-    )
-
+def scan_folder(folder, options: ExtractionOptions):
+    """Scanne un dossier avec les options d'extraction données."""
     discovery = FileDiscoveryService(options)
     files = discovery.find_files(folder)
 

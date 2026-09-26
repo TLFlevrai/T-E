@@ -174,6 +174,11 @@ class Application:
         """Callback fermeture fenêtre - délègue au shell."""
         if self.shell:
             self.shell.on_close()
+        # FIX BUG #2 : Arrêt propre du controller d'extraction avant les services réseau
+        if self.shell and hasattr(self.shell, 'extract_controller'):
+            extract_controller = self.shell.extract_controller
+            if extract_controller and hasattr(extract_controller, 'shutdown'):
+                extract_controller.shutdown()
         self._stop_network_services()
         if self.root:
             self.root.destroy()

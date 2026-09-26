@@ -8,7 +8,7 @@ from pathlib import Path
 
 from src.core.command_registry import Command
 from src.core.tool import Tool
-from src.gui.theme import get_color
+from src.gui.theme import get_color, get_font
 from src.i18n import _
 from src.logger import setup_logger
 from ._text_stats import (
@@ -24,7 +24,7 @@ def build_analyzer_view(shell) -> ttk.Frame:
     frame.columnconfigure(0, weight=1)
 
     ttk.Label(frame, text=str(_("Analyseur de texte")),
-              font=('Segoe UI', 15, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=(0, 12))
+              font=get_font('h1')).grid(row=0, column=0, sticky=tk.W, pady=(0, 12))
 
     state = {'text': ''}
 
@@ -57,7 +57,7 @@ def build_analyzer_view(shell) -> ttk.Frame:
     ttk.Label(input_frame, text=str(_("Ou collez du texte :"))).grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(6, 2))
 
     text_input = tk.Text(input_frame, height=4, wrap=tk.WORD,
-                         font=('Consolas', 10), bg=get_color('text_bg'), fg=get_color('text_fg'),
+                         font=get_font('mono_sm'), bg=get_color('text_bg'), fg=get_color('text_fg'),
                          insertbackground=get_color('fg'), bd=0, highlightthickness=0)
     text_input.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E))
     text_input.bind('<KeyRelease>', lambda e: _analyze())
@@ -96,9 +96,9 @@ def build_analyzer_view(shell) -> ttk.Frame:
         ('max_line_length', _("Plus longue ligne")),
     ]
     for i, (key, label) in enumerate(stats_labels):
-        ttk.Label(stats_frame, text=f"{label} :", font=('Segoe UI', 10)).grid(row=i, column=0, sticky=tk.W, pady=2)
+        ttk.Label(stats_frame, text=f"{label} :", font=get_font('body')).grid(row=i, column=0, sticky=tk.W, pady=2)
         var = tk.StringVar(value="—")
-        ttk.Label(stats_frame, textvariable=var, font=('Consolas', 10, 'bold')).grid(row=i, column=1, sticky=tk.W, padx=(12, 0), pady=2)
+        ttk.Label(stats_frame, textvariable=var, font=get_font('mono')).grid(row=i, column=1, sticky=tk.W, padx=(12, 0), pady=2)
         stats_vars[key] = var
 
     # Onglet 2 : Fréquence
@@ -106,7 +106,7 @@ def build_analyzer_view(shell) -> ttk.Frame:
     notebook.add(freq_frame, text=str(_("📊 Fréquence")))
 
     freq_text = tk.Text(freq_frame, height=10, wrap=tk.NONE,
-                        font=('Consolas', 10), bg=get_color('text_bg'), fg=get_color('text_fg'),
+                        font=get_font('mono'), bg=get_color('text_bg'), fg=get_color('text_fg'),
                         insertbackground=get_color('fg'), bd=0, highlightthickness=0,
                         state='disabled')
     freq_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
@@ -128,25 +128,25 @@ def build_analyzer_view(shell) -> ttk.Frame:
         ('line_ending', _("Fin de ligne")),
     ]
     for i, (key, label) in enumerate(enc_labels):
-        ttk.Label(enc_frame, text=f"{label} :", font=('Segoe UI', 10)).grid(row=i, column=0, sticky=tk.W, pady=4)
+        ttk.Label(enc_frame, text=f"{label} :", font=get_font('body')).grid(row=i, column=0, sticky=tk.W, pady=4)
         var = tk.StringVar(value="—")
-        ttk.Label(enc_frame, textvariable=var, font=('Consolas', 10, 'bold')).grid(row=i, column=1, sticky=tk.W, padx=(12, 0), pady=4)
+        ttk.Label(enc_frame, textvariable=var, font=get_font('mono')).grid(row=i, column=1, sticky=tk.W, padx=(12, 0), pady=4)
         enc_vars[key] = var
 
     # Onglet 4 : Minification
     min_frame = ttk.Frame(notebook, padding=8)
     notebook.add(min_frame, text=str(_("📦 Minification")))
 
-    ttk.Label(min_frame, text=str(_("Format :")), font=('Segoe UI', 10)).grid(row=0, column=0, sticky=tk.W)
+    ttk.Label(min_frame, text=str(_("Format :")), font=get_font('body')).grid(row=0, column=0, sticky=tk.W)
     min_fmt_var = tk.StringVar(value="auto")
     fmt_menu = ttk.OptionMenu(min_frame, min_fmt_var, "auto", "auto", "JS", "CSS", "HTML")
     fmt_menu.grid(row=0, column=1, sticky=tk.W, padx=(6, 0))
 
     min_result_var = tk.StringVar(value="")
-    ttk.Label(min_frame, textvariable=min_result_var, font=('Consolas', 10)).grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
+    ttk.Label(min_frame, textvariable=min_result_var, font=get_font('mono')).grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
 
     min_text = tk.Text(min_frame, height=6, wrap=tk.WORD,
-                       font=('Consolas', 9), bg=get_color('text_bg'), fg=get_color('text_fg'),
+                       font=get_font('mono_sm'), bg=get_color('text_bg'), fg=get_color('text_fg'),
                        insertbackground=get_color('fg'), bd=0, highlightthickness=0,
                        state='disabled')
     min_text.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(8, 0))
@@ -165,20 +165,20 @@ def build_analyzer_view(shell) -> ttk.Frame:
 
     cmp_frame.columnconfigure(1, weight=1)
 
-    ttk.Label(cmp_frame, text=str(_("Texte A :")), font=('Segoe UI', 10)).grid(row=0, column=0, sticky=tk.W, pady=(0, 2))
+    ttk.Label(cmp_frame, text=str(_("Texte A :")), font=get_font('body')).grid(row=0, column=0, sticky=tk.W, pady=(0, 2))
     cmp_text_a = tk.Text(cmp_frame, height=4, wrap=tk.WORD,
-                         font=('Consolas', 9), bg=get_color('text_bg'), fg=get_color('text_fg'),
+                         font=get_font('mono_sm'), bg=get_color('text_bg'), fg=get_color('text_fg'),
                          insertbackground=get_color('fg'), bd=0, highlightthickness=0)
     cmp_text_a.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 4))
 
-    ttk.Label(cmp_frame, text=str(_("Texte B :")), font=('Segoe UI', 10)).grid(row=2, column=0, sticky=tk.W, pady=(0, 2))
+    ttk.Label(cmp_frame, text=str(_("Texte B :")), font=get_font('body')).grid(row=2, column=0, sticky=tk.W, pady=(0, 2))
     cmp_text_b = tk.Text(cmp_frame, height=4, wrap=tk.WORD,
-                         font=('Consolas', 9), bg=get_color('text_bg'), fg=get_color('text_fg'),
+                         font=get_font('mono_sm'), bg=get_color('text_bg'), fg=get_color('text_fg'),
                          insertbackground=get_color('fg'), bd=0, highlightthickness=0)
     cmp_text_b.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 4))
 
     cmp_result_var = tk.StringVar(value="")
-    ttk.Label(cmp_frame, textvariable=cmp_result_var, font=('Consolas', 10, 'bold')).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(4, 0))
+    ttk.Label(cmp_frame, textvariable=cmp_result_var, font=get_font('mono')).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(4, 0))
 
     ttk.Button(cmp_frame, text=str(_("Comparer")), command=lambda: _do_compare()).grid(row=5, column=0, columnspan=2, sticky=tk.E, pady=(8, 0))
 

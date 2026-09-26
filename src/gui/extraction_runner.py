@@ -2,6 +2,7 @@
 from __future__ import annotations
 import os
 import time
+from collections import deque
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 import tkinter as tk
@@ -24,6 +25,9 @@ ETA_THRESHOLD_SECONDS = 1.5
 # empile des milliers de callbacks after() et l'UI continue de "tourner"
 # après la fin de l'extraction.
 UI_UPDATE_INTERVAL_SECONDS = 0.06
+
+# ETA max : 1 heure (3600 secondes)
+MAX_ETA_SECONDS = 3600
 
 
 def _format_eta(seconds: float) -> str:
@@ -63,7 +67,12 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             pass
 
     # Estimation du temps restant + throttling des mises à jour UI
-    eta_state = {'start_time': None, 'last_current': 0, 'eta': None}
+    eta_state = {
+        'start_time': None,
+        'last_current': 0,
+        'eta': None,
+        'rates': deque(maxlen=10)  # FIX BUG #6 : moyenne glissante sur 10 dernières mesures
+    }
     ui_state = {'last_scheduled': 0.0}
 
     def enhanced_progress_callback(current: int, total: int, current_file: str = "") -> None:
@@ -75,9 +84,17 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             elapsed = time.monotonic() - eta_state['start_time']
             delta = current - eta_state['last_current']
             if current > 0 and delta > 0 and elapsed > ETA_THRESHOLD_SECONDS:
-                rate = delta / elapsed
-                remaining = (total - current) / rate
-                eta_state['eta'] = remaining
+                # FIX BUG #6 : calculer le rate instantané et l'ajouter à la fenêtre glissante
+                instant_rate = delta / elapsed
+                eta_state['rates'].append(instant_rate)
+                # Moyenne glissante sur les taux disponibles
+                if eta_state['rates']:
+                    avg_rate = sum(eta_state['rates']) / len(eta_state['rates'])
+                    remaining = (total - current) / avg_rate if avg_rate > 0 else 0
+                    # Clamp ETA à 1 heure max
+                    if remaining > MAX_ETA_SECONDS:
+                        remaining = MAX_ETA_SECONDS
+                    eta_state['eta'] = remaining
         eta_state['last_current'] = current
 
         # Throttle : au plus ~16 mises à jour/s ; l'état final est garanti par
@@ -107,6 +124,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
         post(lambda: controller.add_info(msg))
 
     try:
+        # --- Bloc 1 : Extraction ---
         success, output_filename, stats = service.extract_folder(
             selected_folder,
             options,
@@ -130,7 +148,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
                 _("Erreur"), _("Échec de l'extraction (voir journal)"), parent=controller.root))
             return False, None, None
 
-        # Succès
+        # Extraction réussie : notifications d'extraction
         post(lambda: controller.ui.status_var.set(_("Extraction terminée")))
         post(lambda: controller.ui.progress_var.set(0))
 
@@ -144,7 +162,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             ))
         post(_log_success_summary)
 
-        # --- Génération du PDF si demandé ---
+        # --- Bloc 2 : Génération PDF (séparé, n'affecte pas le statut d'extraction) ---
         pdf_path = None
         if export_pdf:
             txt_path = Path(output_filename)
@@ -155,10 +173,12 @@ def run_extraction(controller, service, selected_folder, options, selected_files
                 post(lambda: controller.add_info(_("PDF généré : {}").format(pdf_path)))
                 post(lambda: controller.add_info(_("Emplacement : {}").format(os.path.abspath(pdf_path))))
             except Exception as e:
+                # FIX BUG #10 : échec PDF ne doit JAMAIS produire de show_error ni retourner False
                 logger.error("Erreur lors de la génération du PDF : %s", e)
                 post(lambda e=e: controller.add_info(_("Erreur de génération du PDF : {}").format(e)))
+                pdf_path = None  # Ne pas inclure dans le message de succès
 
-        # Message de succès (inclut le PDF si généré)
+        # Message de succès final (extraction + PDF si réussi)
         success_msg = (
             _("Extraction terminée avec succès !\n\n")
             + _("Fichier créé : {}\n").format(output_filename)
@@ -176,7 +196,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
         if export_pdf and pdf_path:
             success_msg += _("\n\nPDF généré : {}").format(os.path.abspath(pdf_path))
 
-        # Toast non-bloquant (déjà sur le thread UI via post) + message de succès
+        # Toast non-bloquant + message de succès
         def _show_success():
             try:
                 show_toast(controller.root, _("Extraction terminée avec succès"), 'success')

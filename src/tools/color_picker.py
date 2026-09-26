@@ -8,6 +8,7 @@ from tkinter import filedialog, messagebox, ttk
 from src.core.command_registry import Command
 from src.core.tool import Tool
 from src.i18n import _
+from src.gui.theme import get_font
 
 
 def _rgb_to_hex(r: int, g: int, b: int) -> str:
@@ -175,7 +176,7 @@ def build_color_picker_view(shell) -> ttk.Frame:
         ttk.Label(info_frame, text=f"{label_text} :").grid(
             row=i, column=0, sticky=tk.W, padx=(0, 6))
         var = tk.StringVar()
-        ttk.Label(info_frame, textvariable=var, font=('Consolas', 10)).grid(
+        ttk.Label(info_frame, textvariable=var, font=get_font('mono')).grid(
             row=i, column=1, sticky=tk.W)
         info_labels[key] = var
 

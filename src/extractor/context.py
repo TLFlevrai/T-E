@@ -25,3 +25,6 @@ class ExtractionContext:
     })
     total_size: int = 0
     processed_files: int = 0
+    # FIX BUG #12 : compteurs de dossiers/packages calculés lors du parcours de structure
+    num_dirs: int = 0
+    num_packages: int = 0

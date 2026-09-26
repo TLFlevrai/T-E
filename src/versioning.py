@@ -100,6 +100,54 @@ class VersionManager:
                 self._save_mapping_locked()
                 logger.info("Compteur réinitialisé pour %s", folder_name)
 
+    # FIX BUG #1 : Race condition sur la numérotation de version
+    def reserve_version(self, folder_name, output_dir="."):
+        """
+        Réserve une version de façon atomique sous verrou.
+        Calcule la prochaine version, met à jour le mapping, crée un fichier sentinel,
+        et retourne le numéro réservé. Évite la race condition entre get_next_version()
+        et use_version() lors d'extractions simultanées.
+        """
+        with self._lock:
+            output_dir = Path(output_dir)
+            last_version = self.mapping.get(folder_name, 0)
+            version = last_version + 1
+            # Trouver la prochaine version libre (fichier inexistant)
+            while (output_dir / f"{folder_name}v{version}.txt").exists():
+                version += 1
+            # Mettre à jour le mapping et sauvegarder
+            self.mapping[folder_name] = version
+            self._save_mapping_locked()
+            # Créer le fichier sentinel pour marquer la réservation
+            sentinel_path = output_dir / f"{folder_name}v{version}.txt.sentinel"
+            try:
+                sentinel_path.write_text("", encoding="utf-8")
+            except (IOError, OSError) as e:
+                logger.warning("Impossible de créer le fichier sentinel : %s", e)
+            return version
+
+    def release_version(self, folder_name, version, output_dir="."):
+        """
+        Libère une version réservée (annulation ou échec).
+        Supprime le fichier sentinel et restaure l'ancien mapping.
+        """
+        with self._lock:
+            output_dir = Path(output_dir)
+            # Supprimer le fichier sentinel
+            sentinel_path = output_dir / f"{folder_name}v{version}.txt.sentinel"
+            try:
+                if sentinel_path.exists():
+                    sentinel_path.unlink()
+            except Exception as e:
+                logger.warning("Impossible de supprimer le fichier sentinel : %s", e)
+            # Restaurer l'ancien mapping
+            if version == 1:
+                if folder_name in self.mapping:
+                    del self.mapping[folder_name]
+            else:
+                self.mapping[folder_name] = version - 1
+            self._save_mapping_locked()
+
     def load_version(self):
         """
         .. deprecated:: 2.1.0

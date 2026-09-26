@@ -18,6 +18,7 @@ from tkinter import ttk
 from src.i18n import _
 from src.logger import setup_logger
 from .base_dialog import BaseDialog
+from src.gui.theme import get_font
 
 logger = setup_logger(__name__)
 
@@ -214,16 +215,16 @@ class CalculatorContent(ttk.Frame):
         self.display_var = tk.StringVar(value="0")
         display = ttk.Entry(
             main, textvariable=self.display_var,
-            font=('Segoe UI', 20), justify=tk.RIGHT, state='readonly',
+            font=get_font('h1'), justify=tk.RIGHT, state='readonly',
         )
         display.pack(fill=tk.X, pady=(0, 4))
 
         # Indicateur mémoire + mode
         info_frame = ttk.Frame(main)
         info_frame.pack(fill=tk.X, pady=(0, 2))
-        self.memory_indicator = ttk.Label(info_frame, text="", font=('Segoe UI', 8), foreground='#888888')
+        self.memory_indicator = ttk.Label(info_frame, text="", font=get_font('caption'), foreground='#888888')
         self.memory_indicator.pack(side=tk.LEFT)
-        self.mode_label = ttk.Label(info_frame, text="Standard", font=('Segoe UI', 8, 'bold'), foreground='#5599ff')
+        self.mode_label = ttk.Label(info_frame, text="Standard", font=get_font('caption'), foreground='#5599ff')
         self.mode_label.pack(side=tk.RIGHT)
 
         # ── Sélecteur de mode ──
@@ -249,9 +250,9 @@ class CalculatorContent(ttk.Frame):
         hist_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(6, 0))
         hist_frame.pack_propagate(False)
 
-        ttk.Label(hist_frame, text=str(_("Historique")), font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 4))
+        ttk.Label(hist_frame, text=str(_("Historique")), font=get_font('small')).pack(anchor=tk.W, pady=(0, 4))
         self._history_listbox = tk.Listbox(
-            hist_frame, font=('Consolas', 9),
+            hist_frame, font=get_font('mono_sm'),
             bg='#1B2027', fg='#E7EBF0', selectbackground='#3E4452',
             selectforeground='#E7EBF0', bd=0, highlightthickness=0, activestyle='none',
         )
@@ -337,7 +338,7 @@ class CalculatorContent(ttk.Frame):
     def _build_percentage_keypad(self):
         frame = self._keypad_frame
         ttk.Label(frame, text=str(_("Saisissez un montant, puis choisissez l'opération")),
-                  font=('Segoe UI', 9), wraplength=300).grid(row=0, column=0, columnspan=4, pady=(0, 8))
+                  font=get_font('small'), wraplength=300).grid(row=0, column=0, columnspan=4, pady=(0, 8))
 
         buttons = [
             ('7', lambda: self._digit('7'), 'd'), ('8', lambda: self._digit('8'), 'd'),
@@ -354,7 +355,7 @@ class CalculatorContent(ttk.Frame):
         sep = ttk.Separator(frame, orient=tk.HORIZONTAL)
         sep.grid(row=5, column=0, columnspan=4, sticky='ew', pady=8)
 
-        ttk.Label(frame, text=str(_("Calculs rapides")), font=('Segoe UI', 9, 'bold')).grid(row=6, column=0, columnspan=4, sticky='w')
+        ttk.Label(frame, text=str(_("Calculs rapides")), font=get_font('small')).grid(row=6, column=0, columnspan=4, sticky='w')
         pct_buttons = [
             ('% du montant', self._pct_of, 7), ('Remise %', self._discount, 8),
             ('Pourboire 15%', lambda: self._tip(15), 9), ('Pourboire 20%', lambda: self._tip(20), 10),
@@ -418,17 +419,17 @@ class CalculatorContent(ttk.Frame):
     def _build_bases_keypad(self):
         frame = self._keypad_frame
         ttk.Label(frame, text=str(_("Entrez un nombre, choisissez la base source puis la base cible")),
-                  font=('Segoe UI', 9), wraplength=300).grid(row=0, column=0, columnspan=4, pady=(0, 6))
+                  font=get_font('small'), wraplength=300).grid(row=0, column=0, columnspan=4, pady=(0, 6))
 
         self._base_from_var = tk.StringVar(value='Décimal')
         self._base_to_var = tk.StringVar(value='Hexadécimal')
 
         base_frame = ttk.Frame(frame)
         base_frame.grid(row=1, column=0, columnspan=4, pady=(0, 6), sticky='ew')
-        ttk.Label(base_frame, text=str(_("De :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+        ttk.Label(base_frame, text=str(_("De :")), font=get_font('small')).pack(side=tk.LEFT)
         ttk.Combobox(base_frame, textvariable=self._base_from_var, values=list(_BASES.keys()),
                      state='readonly', width=12).pack(side=tk.LEFT, padx=4)
-        ttk.Label(base_frame, text=str(_("Vers :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+        ttk.Label(base_frame, text=str(_("Vers :")), font=get_font('small')).pack(side=tk.LEFT)
         ttk.Combobox(base_frame, textvariable=self._base_to_var, values=list(_BASES.keys()),
                      state='readonly', width=12).pack(side=tk.LEFT, padx=4)
 
@@ -457,7 +458,7 @@ class CalculatorContent(ttk.Frame):
             ttk.Button(frame, text=txt, command=cmd, width=4).grid(row=3 + r, column=c, padx=1, pady=1)
 
         self._base_result_var = tk.StringVar(value="")
-        ttk.Label(frame, textvariable=self._base_result_var, font=('Consolas', 10, 'bold'),
+        ttk.Label(frame, textvariable=self._base_result_var, font=get_font('mono'),
                   foreground='#5599ff', wraplength=300).grid(row=7, column=0, columnspan=4, pady=(8, 0), sticky='w')
         ttk.Button(frame, text=str(_("C")), command=self._clear, width=4).grid(row=8, column=0, padx=1, pady=1)
         ttk.Button(frame, text=str(_("⌫")), command=self._backspace, width=4).grid(row=8, column=1, padx=1, pady=1)
@@ -492,7 +493,7 @@ class CalculatorContent(ttk.Frame):
     def _build_unit_keypad(self):
         frame = self._keypad_frame
         ttk.Label(frame, text=str(_("Convertissez entre unités")),
-                  font=('Segoe UI', 9, 'bold')).grid(row=0, column=0, columnspan=4, pady=(0, 6))
+                  font=get_font('small')).grid(row=0, column=0, columnspan=4, pady=(0, 6))
 
         self._unit_cat_var = tk.StringVar(value='Température')
         self._unit_from_var = tk.StringVar(value='°C')
@@ -500,17 +501,17 @@ class CalculatorContent(ttk.Frame):
 
         cat_frame = ttk.Frame(frame)
         cat_frame.grid(row=1, column=0, columnspan=4, sticky='ew', pady=(0, 4))
-        ttk.Label(cat_frame, text=str(_("Catégorie :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+        ttk.Label(cat_frame, text=str(_("Catégorie :")), font=get_font('small')).pack(side=tk.LEFT)
         ttk.Combobox(cat_frame, textvariable=self._unit_cat_var, values=list(_UNIT_CATEGORIES.keys()),
                      state='readonly', width=12).pack(side=tk.LEFT, padx=4)
         self._unit_cat_var.trace_add('write', lambda *_: self._on_unit_cat_change())
 
         unit_frame = ttk.Frame(frame)
         unit_frame.grid(row=2, column=0, columnspan=4, sticky='ew', pady=(0, 4))
-        ttk.Label(unit_frame, text=str(_("De :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+        ttk.Label(unit_frame, text=str(_("De :")), font=get_font('small')).pack(side=tk.LEFT)
         self._unit_from_cb = ttk.Combobox(unit_frame, textvariable=self._unit_from_var, state='readonly', width=6)
         self._unit_from_cb.pack(side=tk.LEFT, padx=4)
-        ttk.Label(unit_frame, text=str(_("Vers :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+        ttk.Label(unit_frame, text=str(_("Vers :")), font=get_font('small')).pack(side=tk.LEFT)
         self._unit_to_cb = ttk.Combobox(unit_frame, textvariable=self._unit_to_var, state='readonly', width=6)
         self._unit_to_cb.pack(side=tk.LEFT, padx=4)
         ttk.Button(unit_frame, text=str(_("Convertir")), command=self._convert_units).pack(side=tk.LEFT, padx=6)
@@ -530,7 +531,7 @@ class CalculatorContent(ttk.Frame):
             ttk.Button(frame, text=txt, command=cmd, width=4).grid(row=3 + r, column=c, padx=1, pady=1)
 
         self._unit_result_var = tk.StringVar(value="")
-        ttk.Label(frame, textvariable=self._unit_result_var, font=('Consolas', 10, 'bold'),
+        ttk.Label(frame, textvariable=self._unit_result_var, font=get_font('mono'),
                   foreground='#5599ff', wraplength=300).grid(row=7, column=0, columnspan=4, pady=(8, 0), sticky='w')
 
         self._on_unit_cat_change(self._unit_cat_var.get())

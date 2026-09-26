@@ -6,6 +6,7 @@ from tkinter import ttk, messagebox
 
 from src.i18n import _
 from src.logger import setup_logger
+from src.gui.theme import get_font
 
 logger = setup_logger(__name__)
 
@@ -44,7 +45,7 @@ class _CrashDialog(tk.Toplevel):
         ttk.Label(
             main,
             text=_("⚠ Une erreur inattendue est survenue."),
-            font=('Arial', 12, 'bold'),
+            font=get_font('h2'),
         ).pack(anchor=tk.W)
 
         ttk.Label(

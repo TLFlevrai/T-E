@@ -95,10 +95,14 @@ class ContentReader:
     @staticmethod
     def _is_likely_binary(file_path: Path) -> bool:
         """
-        Heuristique conservatrice pour détecter un fichier binaire.
-        Lit les premiers 8 Ko et vérifie :
-        - Présence de bytes NUL (\\x00)
-        - Ratio de bytes non-ASCII (>30%)
+        Heuristique améliorée pour détecter un fichier binaire.
+        Logique :
+        1. Lire l'échantillon (8 Ko). Si vide → False.
+        2. Si b'\x00' présent → True (binaire certain).
+        3. Essayer sample.decode('utf-8') → si succès → False (c'est du texte).
+        4. Essayer sample.decode('cp1252') puis 'latin-1' → si succès ET que le ratio de
+           caractères de contrôle (< 32 hors \t\n\r) est < 5% → False.
+        5. Sinon → True.
         """
         try:
             with open(file_path, 'rb') as f:
@@ -109,21 +113,33 @@ class ContentReader:
         if not sample:
             return False
 
-        # NUL byte = binaire certain
+        # 1. NUL byte = binaire certain
         if b'\x00' in sample:
             logger.debug("Fichier binaire détecté (NUL byte) : %s", file_path)
             return True
 
-        # Compter bytes non-ASCII (>127)
-        non_ascii = sum(1 for b in sample if b > 127)
-        ratio = non_ascii / len(sample)
+        # 2. Essayer UTF-8 : si succès, c'est du texte
+        try:
+            sample.decode('utf-8')
+            return False
+        except UnicodeDecodeError:
+            pass
 
-        # Seuil conservateur : 30% de non-ASCII
-        if ratio > 0.30:
-            logger.debug("Fichier binaire détecté (ratio non-ASCII %.2f%%) : %s", ratio * 100, file_path)
-            return True
+        # 3. Essayer cp1252 puis latin-1
+        for encoding in ('cp1252', 'latin-1'):
+            try:
+                text = sample.decode(encoding)
+                # Compter les caractères de contrôle (hors \t\n\r)
+                control_chars = sum(1 for ch in text if ord(ch) < 32 and ch not in '\t\n\r')
+                ratio = control_chars / len(text) if text else 0
+                if ratio < 0.05:  # < 5% de caractères de contrôle
+                    return False
+            except UnicodeDecodeError:
+                continue
 
-        return False
+        # 4. Sinon → binaire
+        logger.debug("Fichier binaire détecté (échec décodage texte) : %s", file_path)
+        return True
 
     @staticmethod
     def _read_streaming(

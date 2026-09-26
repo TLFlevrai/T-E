@@ -10,7 +10,7 @@ from pathlib import Path
 
 from src.core.command_registry import Command
 from src.core.tool import Tool
-from src.gui.theme import get_color
+from src.gui.theme import get_color, get_font
 from src.i18n import _
 from src.logger import setup_logger
 from ._syntax import SyntaxHighlighter, detect_language
@@ -42,7 +42,7 @@ def build_notepad_view(shell) -> ttk.Frame:
 
     # ── Titre ──
     ttk.Label(frame, text=str(_("Bloc-notes amélioré")),
-              font=('Segoe UI', 15, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=(0, 8))
+              font=get_font('h1')).grid(row=0, column=0, sticky=tk.W, pady=(0, 8))
 
     # ── Barre de recherche (initialement cachée) ──
     search_frame = ttk.Frame(frame)
@@ -71,7 +71,7 @@ def build_notepad_view(shell) -> ttk.Frame:
     ]
     for key, default in status_labels:
         var = tk.StringVar(value=default)
-        ttk.Label(status_frame, textvariable=var, font=('Consolas', 9),
+        ttk.Label(status_frame, textvariable=var, font=get_font('mono_sm'),
                   foreground=get_color('fg_muted')).pack(side=tk.LEFT, padx=(0, 12))
         status_vars[key] = var
 
@@ -117,7 +117,7 @@ def build_notepad_view(shell) -> ttk.Frame:
             maxundo=100,
             autoseparators=True,
             wrap=tk.WORD,
-            font=('Consolas', 11),
+            font=get_font('mono'),
             bg=get_color('text_bg'),
             fg=get_color('text_fg'),
             insertbackground=get_color('fg'),

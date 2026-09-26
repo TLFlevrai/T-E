@@ -16,6 +16,7 @@ class ExtractionController(BaseController):
     def __init__(self, root, ui_widgets, service=None):
         super().__init__(root, ui_widgets, service)
         self._cancel_event = None
+        self._worker_thread = None  # FIX BUG #2 : stocker le thread worker pour shutdown propre
 
     def open_selection_dialog(self):
         """Ouvre le dialogue de sélection des fichiers."""
@@ -91,7 +92,18 @@ class ExtractionController(BaseController):
                 logger.error(f"Erreur dans le thread d'extraction : {e}")
                 self.root.after(0, lambda err=e: self._extraction_error(err))
 
-        threading.Thread(target=extraction_thread, daemon=True).start()
+        # FIX BUG #2 : Stocker le thread pour pouvoir l'attendre à la fermeture
+        self._worker_thread = threading.Thread(target=extraction_thread, daemon=True)
+        self._worker_thread.start()
+
+    def shutdown(self):
+        """Arrêt propre : annule l'extraction et attend la fin du thread worker."""
+        if self._cancel_event is not None:
+            self._cancel_event.set()
+        if self._worker_thread is not None and self._worker_thread.is_alive():
+            self._worker_thread.join(timeout=2.0)
+            if self._worker_thread.is_alive():
+                logger.warning("Thread d'extraction non terminé après 2s (shutdown)")
 
     def _extraction_finished(self, success, output_filename, stats):
         """Appelé après la fin de l'extraction."""

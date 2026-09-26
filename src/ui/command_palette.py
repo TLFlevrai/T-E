@@ -13,6 +13,7 @@ from typing import Any
 from src.core.command_registry import commands
 from src.core.tool_registry import registry
 from src.i18n import _
+from src.gui.theme import get_font
 
 
 class _PaletteItem:
@@ -100,14 +101,14 @@ class CommandPaletteDialog(tk.Toplevel):
             ))
         self._all_items = items
 
-    # --- UI ---
+# --- UI ---
 
     def _create_widgets(self):
         main = ttk.Frame(self, padding=12)
         main.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(main, text=_("Rechercher une commande ou un outil..."),
-                  font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 6))
+                  font=get_font('small')).pack(anchor=tk.W, pady=(0, 6))
 
         search_frame = ttk.Frame(main)
         search_frame.pack(fill=tk.X, pady=(0, 8))
@@ -115,7 +116,7 @@ class CommandPaletteDialog(tk.Toplevel):
         self.search_var = tk.StringVar()
         self.search_var.trace_add('write', lambda *_: self._refresh())
         self.entry = ttk.Entry(search_frame, textvariable=self.search_var,
-                               font=('Segoe UI', 11))
+                               font=get_font('body'))
         self.entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.entry.insert(0, "")
 
@@ -125,7 +126,7 @@ class CommandPaletteDialog(tk.Toplevel):
         self.listbox = tk.Listbox(
             self.list_frame,
             activestyle='dotbox',
-            font=('Segoe UI', 10),
+            font=get_font('body'),
             selectmode=tk.BROWSE,
             highlightthickness=0,
             borderwidth=0,
@@ -138,7 +139,7 @@ class CommandPaletteDialog(tk.Toplevel):
         self.listbox.bind("<Double-Button-1>", lambda e: self._execute())
 
         hint = ttk.Label(main, text=f"↑↓ {_('Naviguer')}   ·   Enter {_('Lancer')}   ·   Esc {_('Fermer')}",
-                         font=('Segoe UI', 8), foreground='#888888')
+                          font=get_font('caption'), foreground='#888888')
         hint.pack(anchor=tk.E, pady=(6, 0))
 
     # --- Filtrage ---

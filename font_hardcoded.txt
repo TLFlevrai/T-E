@@ -1,0 +1,80 @@
+src\gui\calculator.py:217:font=('Segoe UI', 20), justify=tk.RIGHT, state='readonly',
+src\gui\calculator.py:224:self.memory_indicator = ttk.Label(info_frame, text="", font=('Segoe UI', 8), foreground='#888888')
+src\gui\calculator.py:226:self.mode_label = ttk.Label(info_frame, text="Standard", font=('Segoe UI', 8, 'bold'), foreground='#5599ff')
+src\gui\calculator.py:252:ttk.Label(hist_frame, text=str(_("Historique")), font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 4))
+src\gui\calculator.py:254:hist_frame, font=('Consolas', 9),
+src\gui\calculator.py:340:font=('Segoe UI', 9), wraplength=300).grid(row=0, column=0, columnspan=4, pady=(0, 8))
+src\gui\calculator.py:357:ttk.Label(frame, text=str(_("Calculs rapides")), font=('Segoe UI', 9, 'bold')).grid(row=6, column=0, columnspan=4, sticky='w')
+src\gui\calculator.py:421:font=('Segoe UI', 9), wraplength=300).grid(row=0, column=0, columnspan=4, pady=(0, 6))
+src\gui\calculator.py:428:ttk.Label(base_frame, text=str(_("De :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+src\gui\calculator.py:431:ttk.Label(base_frame, text=str(_("Vers :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+src\gui\calculator.py:460:ttk.Label(frame, textvariable=self._base_result_var, font=('Consolas', 10, 'bold'),
+src\gui\calculator.py:495:font=('Segoe UI', 9, 'bold')).grid(row=0, column=0, columnspan=4, pady=(0, 6))
+src\gui\calculator.py:503:ttk.Label(cat_frame, text=str(_("Catégorie :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+src\gui\calculator.py:510:ttk.Label(unit_frame, text=str(_("De :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+src\gui\calculator.py:513:ttk.Label(unit_frame, text=str(_("Vers :")), font=('Segoe UI', 9)).pack(side=tk.LEFT)
+src\gui\calculator.py:533:ttk.Label(frame, textvariable=self._unit_result_var, font=('Consolas', 10, 'bold'),
+src\gui\converter.py:35:title = ttk.Label(main, text=_("Convertisseur SVG vers ICO"), font=('Arial', 14, 'bold'))
+src\gui\crash_report.py:47:font=('Arial', 12, 'bold'),
+src\gui\theme_editor.py:62:title = ttk.Label(main, text=_("Personnalisation du thème"), font=('Arial', 14, 'bold'))
+src\gui\toast.py:69:font=('Segoe UI', 9),
+src\gui\video_converter.py:43:title = ttk.Label(main, text=_("Convertisseur Vidéo vers MP3"), font=('Arial', 14, 'bold'))
+src\gui\video_converter.py:77:font=('Arial', 8), foreground='gray')
+src\gui\settings\tabs.py:95:ttk.Label(self.parent, text=_("Dossier de sortie :"), font=('Arial', 9, 'bold')).grid(
+src\gui\settings\tabs.py:169:ttk.Label(self.parent, text=_("Preset d'export :"), font=('Arial', 9, 'bold')).grid(
+src\gui\ui_builder\log_widget.py:78:font=('Consolas', 9))
+src\gui\ui_builder\widgets.py:22:font=('Segoe UI', 15, 'bold'))
+src\gui\ui_builder\widgets.py:36:state='readonly', font=('Segoe UI', 10))
+src\gui\ui_builder\widgets.py:61:ui.output_dir_label = ttk.Label(folder_card, text="", font=('Segoe UI', 8), foreground='#888888')
+src\tools\builder.py:624:font=('Consolas', 9), bd=0, highlightthickness=0,
+src\tools\builder.py:785:ttk.Label(hdr, text=info_text, font=('Segoe UI', 10)).pack(anchor=tk.W)
+src\tools\color_picker.py:178:ttk.Label(info_frame, textvariable=var, font=('Consolas', 10)).grid(
+src\tools\converter.py:40:font=('Segoe UI', 15, 'bold'))
+src\tools\converter.py:65:ttk.Label(frame, text=str(_("Mode :")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+src\tools\converter.py:147:ttk.Label(frame, text=str(_("Fichier vidéo :")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+src\tools\converter.py:244:ttk.Label(frame, text=str(_("Conversion d'images")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+src\tools\converter.py:326:ttk.Label(frame, text=str(_("CSV → JSON")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+src\tools\converter.py:395:ttk.Label(frame, text=str(_("Conversion audio")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+src\tools\converter.py:455:ttk.Label(frame, text=str(_("Conversion par lot")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+src\tools\converter.py:457:font=('Segoe UI', 9)).pack(anchor=tk.W, pady=(0, 8))
+src\tools\converter.py:542:bg=get_color('text_bg'), fg=get_color('text_fg'), font=('Consolas', 9),
+src\tools\diff.py:74:ttk.Label(left_frame, text=str(_("Fichier A")), font=('Segoe UI', 9, 'bold')).grid(
+src\tools\diff.py:76:text_a = tk.Text(left_frame, wrap=tk.NONE, font=('Consolas', 10),
+src\tools\diff.py:91:ttk.Label(right_frame, text=str(_("Fichier B")), font=('Segoe UI', 9, 'bold')).grid(
+src\tools\diff.py:93:text_b = tk.Text(right_frame, wrap=tk.NONE, font=('Consolas', 10),
+src\tools\notepad.py:45:font=('Segoe UI', 15, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=(0, 8))
+src\tools\notepad.py:74:ttk.Label(status_frame, textvariable=var, font=('Consolas', 9),
+src\tools\notepad.py:120:font=('Consolas', 11),
+src\tools\text_analyzer.py:27:font=('Segoe UI', 15, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=(0, 12))
+src\tools\text_analyzer.py:60:font=('Consolas', 10), bg=get_color('text_bg'), fg=get_color('text_fg'),
+src\tools\text_analyzer.py:99:ttk.Label(stats_frame, text=f"{label} :", font=('Segoe UI', 10)).grid(row=i, column=0, sticky=tk.W, pady=2)
+src\tools\text_analyzer.py:101:ttk.Label(stats_frame, textvariable=var, font=('Consolas', 10, 'bold')).grid(row=i, column=1, sticky=tk.W, padx=(12, 0), pady=2)
+src\tools\text_analyzer.py:109:font=('Consolas', 10), bg=get_color('text_bg'), fg=get_color('text_fg'),
+src\tools\text_analyzer.py:131:ttk.Label(enc_frame, text=f"{label} :", font=('Segoe UI', 10)).grid(row=i, column=0, sticky=tk.W, pady=4)
+src\tools\text_analyzer.py:133:ttk.Label(enc_frame, textvariable=var, font=('Consolas', 10, 'bold')).grid(row=i, column=1, sticky=tk.W, padx=(12, 0), pady=4)
+src\tools\text_analyzer.py:140:ttk.Label(min_frame, text=str(_("Format :")), font=('Segoe UI', 10)).grid(row=0, column=0, sticky=tk.W)
+src\tools\text_analyzer.py:146:ttk.Label(min_frame, textvariable=min_result_var, font=('Consolas', 10)).grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
+src\tools\text_analyzer.py:149:font=('Consolas', 9), bg=get_color('text_bg'), fg=get_color('text_fg'),
+src\tools\text_analyzer.py:168:ttk.Label(cmp_frame, text=str(_("Texte A :")), font=('Segoe UI', 10)).grid(row=0, column=0, sticky=tk.W, pady=(0, 2))
+src\tools\text_analyzer.py:170:font=('Consolas', 9), bg=get_color('text_bg'), fg=get_color('text_fg'),
+src\tools\text_analyzer.py:174:ttk.Label(cmp_frame, text=str(_("Texte B :")), font=('Segoe UI', 10)).grid(row=2, column=0, sticky=tk.W, pady=(0, 2))
+src\tools\text_analyzer.py:176:font=('Consolas', 9), bg=get_color('text_bg'), fg=get_color('text_fg'),
+src\tools\text_analyzer.py:181:ttk.Label(cmp_frame, textvariable=cmp_result_var, font=('Consolas', 10, 'bold')).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(4, 0))
+src\tools\tools_hub.py:27:font=('Segoe UI', 15, 'bold'))
+src\tools\tools_hub.py:57:style='Card.TLabel', font=('Segoe UI', 10, 'bold')).grid(
+src\tools\tools_hub.py:88:ttk.Label(frame, text=label, font=('Segoe UI', 9, 'bold'),
+src\tools\tools_hub.py:98:font=('Segoe UI', 14)).grid(row=0, column=0, padx=(0, 10))
+src\tools\tools_hub.py:100:font=('Segoe UI', 10, 'bold')).grid(row=0, column=1, sticky=tk.W)
+src\tools\tools_hub.py:102:font=('Segoe UI', 9)).grid(row=1, column=1, sticky=tk.W)
+src\ui\command_palette.py:110:font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 6))
+src\ui\command_palette.py:118:font=('Segoe UI', 11))
+src\ui\command_palette.py:128:font=('Segoe UI', 10),
+src\ui\command_palette.py:141:font=('Segoe UI', 8), foreground='#888888')
+src\ui\shell.py:63:font=('Segoe UI', 11),
+src\ui\sidebar.py:72:font=('Segoe UI', 10),
+src\ui\tooltips.py:69:padding=(6, 3), font=("Arial", 9))
+src\ui\tooltips.py:212:font=('Segoe UI', 10, 'bold'), justify=tk.LEFT,
+src\ui\tooltips.py:217:font=('Segoe UI', 9), justify=tk.LEFT, anchor='w',
+src\ui\workspace.py:84:style='Card.TLabel', font=('Segoe UI', 20, 'bold')).grid(
+src\ui\workspace.py:88:style='Card.TLabel', font=('Segoe UI', 11), justify=tk.CENTER).grid(
+src\ui\workspace.py:93:style='Card.TLabel', font=('Segoe UI', 9)).grid(

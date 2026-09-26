@@ -10,7 +10,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from src.core.command_registry import Command
 from src.core.tool import Tool
-from src.gui.theme import get_color
+from src.gui.theme import get_color, get_font, get_font
 from src.i18n import _
 
 # Tags de couleur pour les différences
@@ -71,9 +71,9 @@ def build_diff_view(shell) -> ttk.Frame:
     left_frame = ttk.Frame(paned)
     left_frame.columnconfigure(0, weight=1)
     left_frame.rowconfigure(1, weight=1)
-    ttk.Label(left_frame, text=str(_("Fichier A")), font=('Segoe UI', 9, 'bold')).grid(
+    ttk.Label(left_frame, text=str(_("Fichier A")), font=get_font('small')).grid(
         row=0, column=0, sticky=tk.W, pady=(0, 2))
-    text_a = tk.Text(left_frame, wrap=tk.NONE, font=('Consolas', 10),
+    text_a = tk.Text(left_frame, wrap=tk.NONE, font=get_font('mono'),
                       bg=get_color('text_bg'), fg=get_color('text_fg'), insertbackground=get_color('fg'),
                       selectbackground=get_color('select_bg'), bd=0, highlightthickness=0)
     scroll_a_y = ttk.Scrollbar(left_frame, orient=tk.VERTICAL, command=text_a.yview)
@@ -88,9 +88,9 @@ def build_diff_view(shell) -> ttk.Frame:
     right_frame = ttk.Frame(paned)
     right_frame.columnconfigure(0, weight=1)
     right_frame.rowconfigure(1, weight=1)
-    ttk.Label(right_frame, text=str(_("Fichier B")), font=('Segoe UI', 9, 'bold')).grid(
+    ttk.Label(right_frame, text=str(_("Fichier B")), font=get_font('small')).grid(
         row=0, column=0, sticky=tk.W, pady=(0, 2))
-    text_b = tk.Text(right_frame, wrap=tk.NONE, font=('Consolas', 10),
+    text_b = tk.Text(right_frame, wrap=tk.NONE, font=get_font('mono'),
                       bg=get_color('text_bg'), fg=get_color('text_fg'), insertbackground=get_color('fg'),
                       selectbackground=get_color('select_bg'), bd=0, highlightthickness=0)
     scroll_b_y = ttk.Scrollbar(right_frame, orient=tk.VERTICAL, command=text_b.yview)

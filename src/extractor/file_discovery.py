@@ -65,14 +65,15 @@ class FileDiscoveryService:
 
     class _WalkItem:
         """Résultat d'un pas de parcours."""
-        __slots__ = ('kind', 'full_path', 'rel_path', 'extension')
+        __slots__ = ('kind', 'full_path', 'rel_path', 'extension', 'size')
 
         def __init__(self, kind: str, full_path: Optional[Path] = None,
-                     rel_path: Optional[Path] = None, extension: Optional[str] = None):
+                     rel_path: Optional[Path] = None, extension: Optional[str] = None, size: int = -1):
             self.kind = kind
             self.full_path = full_path
             self.rel_path = rel_path
             self.extension = extension
+            self.size = size  # FIX BUG #3 : taille du fichier calculée au parcours (-1 si inconnu)
 
     def _walk(self, folder_path: Path, collect_dirs: bool = False,
               all_files: bool = False) -> Iterator[_WalkItem]:
@@ -129,7 +130,13 @@ class FileDiscoveryService:
                         if parent != Path('.'):
                             yield self._WalkItem('dir', rel_path=parent)
 
-                yield self._WalkItem('file', full_path=full_path, rel_path=rel_path, extension=full_path.suffix)
+                # FIX BUG #3 : calculer la taille une seule fois au parcours
+                file_size = -1
+                try:
+                    file_size = full_path.stat().st_size
+                except OSError:
+                    pass
+                yield self._WalkItem('file', full_path=full_path, rel_path=rel_path, extension=full_path.suffix, size=file_size)
 
     def _is_extractable_file(self, filename: str) -> bool:
         """Vérification rapide d'extension (pas d'allocation Path)."""

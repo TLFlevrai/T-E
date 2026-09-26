@@ -1,0 +1,45 @@
+src\gui\calculator.py:225:self.memory_indicator = ttk.Label(info_frame, text="", font=get_font('caption'), foreground='#888888')
+src\gui\calculator.py:227:self.mode_label = ttk.Label(info_frame, text="Standard", font=get_font('caption'), foreground='#5599ff')
+src\gui\calculator.py:256:bg='#1B2027', fg='#E7EBF0', selectbackground='#3E4452',
+src\gui\calculator.py:257:selectforeground='#E7EBF0', bd=0, highlightthickness=0, activestyle='none',
+src\gui\calculator.py:462:foreground='#5599ff', wraplength=300).grid(row=7, column=0, columnspan=4, pady=(8, 0), sticky='w')
+src\gui\calculator.py:535:foreground='#5599ff', wraplength=300).grid(row=7, column=0, columnspan=4, pady=(8, 0), sticky='w')
+src\gui\theme_editor.py:118:var = tk.StringVar(value=self.custom_theme.get(key, '#000000'))
+src\gui\toast.py:15:'info': ('#2b7de9', '#ffffff'),
+src\gui\toast.py:16:'success': ('#28a745', '#ffffff'),
+src\gui\toast.py:17:'warning': ('#ffc107', '#1f1f1f'),
+src\gui\toast.py:18:'error': ('#dc3545', '#ffffff'),
+src\gui\ui_builder\widgets.py:62:ui.output_dir_label = ttk.Label(folder_card, text="", font=get_font('caption'), foreground='#888888')
+src\tools\builder.py:624:bg='#1B2027', fg='#E7EBF0', insertbackground='#E7EBF0',
+src\tools\builder.py:828:tree.tag_configure('ok', foreground='#4EC9B0')
+src\tools\builder.py:829:tree.tag_configure('ignored', foreground='#888888')
+src\tools\color_picker.py:100:color_preview = tk.Canvas(preview_frame, height=80, bg='#3498db',
+src\tools\color_picker.py:125:hex_var = tk.StringVar(value='#3498db')
+src\tools\color_picker.py:187:recent_canvas = tk.Canvas(recent_frame, height=30, bg='#2D2D30',
+src\tools\color_picker.py:193:'current_color': '#3498db',
+src\tools\color_picker.py:228:str(_("Entrez une couleur HEX valide (ex: #3498db).")))
+src\tools\notepad.py:415:body {{ background: #1E1E1E; color: #D4D4D4; font-family: Consolas, monospace; padding: 20px; }}
+src\tools\notepad.py:416:.line-num {{ color: #858585; user-select: none; }}
+src\tools\tools_hub.py:90:foreground='#888888').grid(row=row, column=0, sticky=tk.W, pady=(10, 4))
+src\tools\_syntax.py:66:'keyword':    '#569CD6',
+src\tools\_syntax.py:67:'string':     '#CE9178',
+src\tools\_syntax.py:68:'number':     '#B5CEA8',
+src\tools\_syntax.py:69:'comment':    '#6A9955',
+src\tools\_syntax.py:70:'operator':   '#D4D4D4',
+src\tools\_syntax.py:71:'tag':        '#569CD6',
+src\tools\_syntax.py:72:'attribute':  '#9CDCFE',
+src\tools\_syntax.py:73:'key':        '#9CDCFE',
+src\tools\_syntax.py:74:'bracket':    '#FFD700',
+src\tools\_syntax.py:75:'function':   '#DCDCAA',
+src\tools\_syntax.py:76:'builtin':    '#4EC9B0',
+src\tools\_syntax.py:77:'decorator':  '#C586C0',
+src\tools\_syntax.py:78:'regex':      '#D16969',
+src\tools\_syntax.py:79:'constant':   '#4FC1FF',
+src\ui\command_palette.py:142:font=get_font('caption'), foreground='#888888')
+src\ui\command_palette.py:153:self.listbox.itemconfig(tk.END, foreground='#888888')
+src\ui\tooltips.py:69:label = ttk.Label(tw, text=self.text, background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+src\ui\tooltips.py:115:_TIP_BG = '#2b2b2b'
+src\ui\tooltips.py:116:_TIP_FG = '#f0f0f0'
+src\ui\tooltips.py:117:_TIP_TITLE = '#ffffff'
+src\ui\tooltips.py:118:_TIP_ACCENT = '#4cc2ff'
+src\ui\tooltips.py:119:_TIP_WARN = '#ffcc66'

@@ -21,6 +21,7 @@ from src.core.tool import Tool
 from src.gui.app_guard import safe_after
 from src.i18n import _
 from src.logger import setup_logger
+from src.gui.theme import get_font
 
 logger = setup_logger(__name__)
 
@@ -621,7 +622,7 @@ def build_builder_view(shell) -> ttk.Frame:
     log_text = tk.Text(
         log_output_frame, height=12, wrap=tk.WORD,
         bg='#1B2027', fg='#E7EBF0', insertbackground='#E7EBF0',
-        font=('Consolas', 9), bd=0, highlightthickness=0,
+        font=get_font('mono_sm'), bd=0, highlightthickness=0,
     )
     log_scroll = ttk.Scrollbar(log_output_frame, orient=tk.VERTICAL, command=log_text.yview)
     log_text.configure(yscrollcommand=log_scroll.set)
@@ -782,7 +783,7 @@ def build_builder_view(shell) -> ttk.Frame:
             f"Date : {plan.extraction_date or 'N/A'}  |  "
             f"Total : {plan.total_files} fichiers"
         )
-        ttk.Label(hdr, text=info_text, font=('Segoe UI', 10)).pack(anchor=tk.W)
+        ttk.Label(hdr, text=info_text, font=get_font('body')).pack(anchor=tk.W)
 
         # Arbre
         tree_frame = ttk.Frame(win)

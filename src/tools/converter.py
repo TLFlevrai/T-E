@@ -21,7 +21,7 @@ from tkinter import ttk, filedialog, messagebox
 from src.core.command_registry import Command
 from src.core.tool import Tool
 from src.gui.app_guard import safe_after
-from src.gui.theme import get_color
+from src.gui.theme import get_color, get_font
 from src.i18n import _
 from src.logger import setup_logger
 
@@ -37,7 +37,7 @@ def build_convert_view(shell) -> ttk.Frame:
     frame = ttk.Frame(shell.workspace, padding=12)
 
     title = ttk.Label(frame, text=str(_("Convertisseur de fichiers")),
-                      font=('Segoe UI', 15, 'bold'))
+                      font=get_font('h1'))
     title.pack(anchor=tk.W, pady=(0, 10))
 
     notebook = ttk.Notebook(frame)
@@ -62,7 +62,7 @@ def _build_document_tab(parent) -> ttk.Frame:
 
     mode_var = tk.StringVar(value="txt_to_pdf")
     modes = [("TXT → PDF", "txt_to_pdf"), ("PDF → TXT", "pdf_to_txt"), ("JSON → TXT", "json_to_txt")]
-    ttk.Label(frame, text=str(_("Mode :")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+    ttk.Label(frame, text=str(_("Mode :")), font=get_font('body_bold')).pack(anchor=tk.W)
     ttk.OptionMenu(frame, mode_var, "TXT → PDF", *[l for l, _ in modes]).pack(fill=tk.X, pady=(0, 8))
 
     src_var, dst_var = tk.StringVar(), tk.StringVar()
@@ -144,7 +144,7 @@ def _build_video_tab(parent) -> ttk.Frame:
         ttk.Label(frame, text=str(_("⚠ FFmpeg non détecté. Installez FFmpeg pour utiliser cet outil.")),
                   foreground='red', wraplength=400).pack(anchor=tk.W, pady=(0, 8))
 
-    ttk.Label(frame, text=str(_("Fichier vidéo :")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+    ttk.Label(frame, text=str(_("Fichier vidéo :")), font=get_font('body_bold')).pack(anchor=tk.W)
     src_var = tk.StringVar()
     state = {'src': None, 'dst': None}
 
@@ -241,7 +241,7 @@ def _build_video_tab(parent) -> ttk.Frame:
 def _build_image_tab(parent) -> ttk.Frame:
     frame = ttk.Frame(parent, padding=12)
 
-    ttk.Label(frame, text=str(_("Conversion d'images")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+    ttk.Label(frame, text=str(_("Conversion d'images")), font=get_font('body_bold')).pack(anchor=tk.W)
 
     src_var = tk.StringVar()
     state = {'src': None}
@@ -323,7 +323,7 @@ def _build_image_tab(parent) -> ttk.Frame:
 def _build_csv_tab(parent) -> ttk.Frame:
     frame = ttk.Frame(parent, padding=12)
 
-    ttk.Label(frame, text=str(_("CSV → JSON")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+    ttk.Label(frame, text=str(_("CSV → JSON")), font=get_font('body_bold')).pack(anchor=tk.W)
 
     src_var, dst_var = tk.StringVar(), tk.StringVar()
     state = {'src': None, 'dst': None}
@@ -392,7 +392,7 @@ def _build_csv_tab(parent) -> ttk.Frame:
 def _build_audio_tab(parent) -> ttk.Frame:
     frame = ttk.Frame(parent, padding=12)
 
-    ttk.Label(frame, text=str(_("Conversion audio")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+    ttk.Label(frame, text=str(_("Conversion audio")), font=get_font('body_bold')).pack(anchor=tk.W)
 
     src_var = tk.StringVar()
     state = {'src': None}
@@ -452,9 +452,9 @@ def _build_audio_tab(parent) -> ttk.Frame:
 def _build_batch_tab(parent) -> ttk.Frame:
     frame = ttk.Frame(parent, padding=12)
 
-    ttk.Label(frame, text=str(_("Conversion par lot")), font=('Segoe UI', 10, 'bold')).pack(anchor=tk.W)
+    ttk.Label(frame, text=str(_("Conversion par lot")), font=get_font('body_bold')).pack(anchor=tk.W)
     ttk.Label(frame, text=str(_("Sélectionnez plusieurs fichiers d'un même type")),
-              font=('Segoe UI', 9)).pack(anchor=tk.W, pady=(0, 8))
+              font=get_font('small')).pack(anchor=tk.W, pady=(0, 8))
 
     mode_var = tk.StringVar(value="image")
     mode_frame = ttk.Frame(frame)
@@ -539,7 +539,7 @@ def _add_progress_and_log(parent):
     log_frame = ttk.Frame(parent, style='Card.TFrame', padding=(6, 4))
     log_frame.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
     log_text = tk.Text(log_frame, height=6, wrap=tk.WORD,
-                       bg=get_color('text_bg'), fg=get_color('text_fg'), font=('Consolas', 9),
+                       bg=get_color('text_bg'), fg=get_color('text_fg'), font=get_font('mono_sm'),
                        bd=0, highlightthickness=0, state='disabled')
     log_scroll = ttk.Scrollbar(log_frame, orient=tk.VERTICAL, command=log_text.yview)
     log_text.configure(yscrollcommand=log_scroll.set)

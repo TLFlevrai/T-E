@@ -10,6 +10,9 @@ class ReportBuilder:
         stats = self.context.stats
         lines = self.context.line_counts
         total_size = self.context.total_size
+        # FIX BUG #12 : passer les compteurs précalculés depuis le contexte
+        num_dirs = self.context.num_dirs
+        num_packages = self.context.num_packages
 
         write_statistics_section(
             out_file,
@@ -31,5 +34,7 @@ class ReportBuilder:
             lines.get('html', 0),
             lines.get('css', 0),
             lines.get('js', 0),
-            total_size
+            total_size,
+            num_dirs=num_dirs,
+            num_packages=num_packages
         )

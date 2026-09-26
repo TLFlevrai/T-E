@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 from src.config import get_config
 from src.i18n import _, LazyString, register_reload_callback
 from src.logger import setup_logger
+from src.gui.theme import get_font
 
 from .ui_widgets import register_lazy_labelframe, register_lazy_widget
 
@@ -75,7 +76,7 @@ class LogWidget:
         # Zone de texte
         log_height = get_config().get('gui.log_height', 12)
         self.info_text = tk.Text(self.info_frame, height=log_height, width=80, wrap=tk.WORD,
-                                 font=('Consolas', 9))
+                                 font=get_font('mono_sm'))
         self.info_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         self.ui.info_text = self.info_text
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from src.i18n import _
 from src.logger import setup_logger
 from .base_dialog import BaseDialog
+from src.gui.theme import get_font
 
 logger = setup_logger(__name__)
 
@@ -32,7 +33,7 @@ class SVGToICOConverter(BaseDialog):
         main.pack(fill=tk.BOTH, expand=True)
 
         # Titre
-        title = ttk.Label(main, text=_("Convertisseur SVG vers ICO"), font=('Arial', 14, 'bold'))
+        title = ttk.Label(main, text=_("Convertisseur SVG vers ICO"), font=get_font('h1'))
         title.pack(pady=(0, 20))
 
         # Sélection fichier SVG

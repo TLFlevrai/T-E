@@ -69,7 +69,7 @@ class Sidebar(ttk.Frame):
         self._toggle_btn = tk.Button(
             title_row,
             text="◀",
-            font=('Segoe UI', 10),
+            font=get_font('caption'),
             bg=get_color('surface'),
             fg=get_color('fg'),
             activebackground=get_color('surface_alt'),

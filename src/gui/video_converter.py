@@ -10,6 +10,7 @@ from src.logger import setup_logger
 from .app_guard import safe_after
 from .base_dialog import BaseDialog
 from .video_converter_core import VideoConverterCore, VideoConversionOptions
+from src.gui.theme import get_font
 
 logger = setup_logger(__name__)
 
@@ -40,7 +41,7 @@ class VideoToMP3Converter(BaseDialog):
         main.pack(fill=tk.BOTH, expand=True)
 
         # Titre
-        title = ttk.Label(main, text=_("Convertisseur Vidéo vers MP3"), font=('Arial', 14, 'bold'))
+        title = ttk.Label(main, text=_("Convertisseur Vidéo vers MP3"), font=get_font('h1'))
         title.pack(pady=(0, 10))
 
         # Avertissement ffmpeg
@@ -74,7 +75,7 @@ class VideoToMP3Converter(BaseDialog):
         formats = self.converter.get_supported_formats()
         formats_label = ttk.Label(video_frame, 
             text=_("Formats supportés : {}").format(", ".join(f.upper() for f in formats)),
-            font=('Arial', 8), foreground='gray')
+            font=get_font('caption'), foreground='gray')
         formats_label.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
 
         # Options de conversion

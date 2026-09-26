@@ -8,20 +8,11 @@ def write_statistics_section(output_file, folder, include_subdirs,
                              total_lines_py, total_lines_json, total_lines_txt,
                              total_lines_po, total_lines_mo,
                              total_lines_html, total_lines_css, total_lines_js,
-                             total_size):
-    folder = Path(folder)
-    num_dirs = 0
-    num_packages = 0
-    if include_subdirs:
-        for root in folder.rglob('*'):
-            if root.is_dir() and root != folder:
-                num_dirs += 1
-                if (root / '__init__.py').exists():
-                    num_packages += 1
-    else:
-        if (folder / '__init__.py').exists():
-            num_packages = 1
-        num_dirs = 0
+                             total_size,
+                             num_dirs: int = 0,
+                             num_packages: int = 0):
+    # FIX BUG #12 : utiliser les compteurs précalculés au lieu de rglob sur le thread UI
+    # num_dirs et num_packages sont fournis par le contexte (calculés dans structure_generator)
 
     output_file.write("\n" + "=" * 80 + "\n")
     output_file.write("STATISTIQUES\n")

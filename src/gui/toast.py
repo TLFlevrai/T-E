@@ -6,6 +6,7 @@ from typing import Optional
 
 from src.i18n import _
 from src.logger import setup_logger
+from src.gui.theme import get_font
 
 logger = setup_logger(__name__)
 
@@ -66,7 +67,7 @@ class _Toast:
             text=message,
             bg=bg,
             fg=fg,
-            font=('Segoe UI', 9),
+            font=get_font('small'),
             padx=18,
             pady=10,
             justify=tk.LEFT,

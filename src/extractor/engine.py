@@ -1,5 +1,6 @@
 # src/extractor/engine.py
 from __future__ import annotations
+from pathlib import Path
 from typing import Optional, Callable
 from src.extractor.file_discovery import FileDiscoveryService
 from src.extractor.structure_generator import generate_project_structure
@@ -11,7 +12,8 @@ from src.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-# Signature de callback de progression : (fichier courant, total, nom relatif)
+# Signature de callback de progression : (octets traités, total octets, nom relatif)
+# FIX BUG #9 : progression pondérée par la taille (octets) au lieu du nombre de fichiers
 ProgressCallback = Callable[[int, int, str], None]
 LogCallback = Callable[[str], None]
 
@@ -19,6 +21,7 @@ LogCallback = Callable[[str], None]
 SUCCESS = 'success'
 FAILED = 'failed'
 CANCELLED = 'cancelled'
+NO_SELECTION = 'no_selection'  # FIX BUG #7 : sélection vide (aucun fichier ne matche)
 
 
 class ExtractionEngine:
@@ -49,6 +52,8 @@ class ExtractionEngine:
 
         # 2) Filtrage sélection
         files = self._filter_selected(all_files, log_callback)
+        if files is NO_SELECTION:
+            return NO_SELECTION
         if files is None:
             return FAILED
 
@@ -59,8 +64,7 @@ class ExtractionEngine:
             with open(output_path, 'w', encoding='utf-8') as out_file:
                 self._write_header(out_file, folder)
                 self._write_structure(out_file, folder, log_callback)
-                result = self._process_files(out_file, files, total_files,
-                                             progress_callback, log_callback)
+                result = self._process_files(out_file, files, progress_callback, log_callback)
                 if result == CANCELLED:
                     cancelled = True
                 else:
@@ -89,17 +93,23 @@ class ExtractionEngine:
         except Exception as e:
             logger.warning("Impossible de supprimer le fichier partiel : %s", e)
 
+    @staticmethod
+    def _normalize_rel_path(p: str) -> str:
+        """Normalise un chemin relatif pour la comparaison (POSIX, sans ./ initial)."""
+        return Path(p).as_posix().lstrip('./')
+
     # --- Sous-étapes de l'extraction ---
 
     def _filter_selected(self, all_files, log_callback: Optional[LogCallback]):
-        """Filtre les fichiers selon la sélection. Retourne None si rien ne correspond."""
+        """Filtre les fichiers selon la sélection. Retourne NO_SELECTION si rien ne correspond."""
         if self.context.selected_files is not None:
-            selected_set = self.context.selected_files
+            # FIX BUG #7 : normaliser les deux côtés pour la comparaison
+            selected_set = {self._normalize_rel_path(f) for f in self.context.selected_files}
             files = [(full, rel, ext) for full, rel, ext in all_files
-                     if rel.as_posix() in selected_set]
+                     if self._normalize_rel_path(rel.as_posix()) in selected_set]
             if not files:
                 self._warn("Aucun fichier sélectionné ne correspond aux fichiers trouvés", log_callback)
-                return None
+                return NO_SELECTION
             return files
         return all_files
 
@@ -114,7 +124,7 @@ class ExtractionEngine:
         """Écrit la structure du projet si l'option est activée."""
         if not self.context.options.include_structure:
             return
-        structure = generate_project_structure(folder, self.context.options)
+        structure = generate_project_structure(folder, self.context.options, self.context)
         out_file.write(structure)
         out_file.write("\n--- FIN DE LA STRUCTURE ---\n\n")
         self._log("✓ Structure du projet générée", log_callback)
@@ -124,14 +134,26 @@ class ExtractionEngine:
         self,
         out_file,
         files,
-        total_files: int,
         progress_callback: Optional[ProgressCallback],
         log_callback: Optional[LogCallback],
     ) -> str:
         """Boucle : TRAITER → ÉCRIRE (séparation des responsabilités).
 
         Retourne CANCELLED si l'annulation a été demandée.
+        FIX BUG #9 : progression pondérée par la taille des fichiers (octets).
         """
+        # FIX BUG #9 : précalculer les tailles pour éviter double I/O et permettre progression pondérée
+        file_sizes = []
+        total_size = 0
+        for full_path, rel_path, ext in files:
+            try:
+                size = full_path.stat().st_size
+            except OSError:
+                size = 0
+            file_sizes.append(size)
+            total_size += size
+
+        processed_size = 0
         for i, (full_path, rel_path, ext) in enumerate(files):
             # Vérifier l'annulation avant chaque fichier
             if self.cancel_event is not None and self.cancel_event.is_set():
@@ -140,7 +162,8 @@ class ExtractionEngine:
                 return CANCELLED
 
             if progress_callback:
-                progress_callback(i + 1, total_files, str(rel_path))
+                # FIX BUG #9 : passer les octets traités au lieu du nombre de fichiers
+                progress_callback(processed_size, total_size, str(rel_path))
 
             # TRAITEMENT pur (testable sans I/O)
             result = self.processor.process(full_path, rel_path, ext)
@@ -148,11 +171,18 @@ class ExtractionEngine:
             # ÉCRITURE (déléguée à export_writer)
             write_file_section(out_file, result)
 
+            # Mettre à jour la taille traitée APRÈS le traitement réussi
+            processed_size += file_sizes[i]
+
             if log_callback:
                 if result.read_ok:
                     log_callback(f"✓ {rel_path} extrait")
                 else:
                     log_callback(f"✗ Erreur sur {rel_path}")
+
+        # Progression finale à 100%
+        if progress_callback and total_size > 0:
+            progress_callback(total_size, total_size, "")
 
         return SUCCESS
 

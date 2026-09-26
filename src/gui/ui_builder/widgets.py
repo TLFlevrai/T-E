@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from src.i18n import _, LazyString, register_reload_callback, unregister_reload_callback
 from src.logger import setup_logger
+from src.gui.theme import get_font
 from .ui_widgets import UIWidgets
 from .tooltip import add_lazy_tooltip
 from .log_widget import LogWidget
@@ -19,7 +20,7 @@ def build_widgets(parent, ui: UIWidgets):
 
     # --- En-tête compact ---
     title_label = ttk.Label(main_frame, text=str(LazyString("Extracteur de code")),
-                            font=('Segoe UI', 15, 'bold'))
+                            font=get_font('h1'))
     title_label.grid(row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 14))
     register_lazy_widget(ui, title_label, "Extracteur de code")
 
@@ -33,7 +34,7 @@ def build_widgets(parent, ui: UIWidgets):
     register_lazy_widget(ui, folder_label, "Dossier")
 
     folder_entry = ttk.Entry(folder_card, textvariable=ui.folder_path_var,
-                             state='readonly', font=('Segoe UI', 10))
+                              state='readonly', font=get_font('body'))
     folder_entry.grid(row=0, column=1, sticky=(tk.W, tk.E))
     ui.folder_entry = folder_entry
 
@@ -58,7 +59,7 @@ def build_widgets(parent, ui: UIWidgets):
     output_dir_btn.config(command=ui.controller.choose_output_dir)
 
     # --- Affichage dossier de sortie personnalisé ---
-    ui.output_dir_label = ttk.Label(folder_card, text="", font=('Segoe UI', 8), foreground='#888888')
+    ui.output_dir_label = ttk.Label(folder_card, text="", font=get_font('caption'), foreground='#888888')
     ui.output_dir_label.grid(row=2, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=(2, 0))
     ui.controller._update_output_dir_label()
 

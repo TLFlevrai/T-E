@@ -6,6 +6,7 @@ from tkinter import ttk, messagebox
 
 from src.i18n import _
 from src.gui.theme_editor import open_theme_editor
+from src.gui.theme import get_font
 
 
 class FormatsTab:
@@ -92,7 +93,7 @@ class OutputTab:
         ttk.Separator(self.parent, orient=tk.HORIZONTAL).grid(
             row=len(outputs), column=0, sticky=(tk.W, tk.E), pady=15)
 
-        ttk.Label(self.parent, text=_("Dossier de sortie :"), font=('Arial', 9, 'bold')).grid(
+        ttk.Label(self.parent, text=_("Dossier de sortie :"), font=get_font('small')).grid(
             row=len(outputs)+1, column=0, sticky=tk.W, pady=2)
 
         output_dir_frame = ttk.Frame(self.parent)
@@ -166,7 +167,7 @@ class AdvancedTab:
         ttk.Separator(self.parent, orient=tk.HORIZONTAL).grid(
             row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
 
-        ttk.Label(self.parent, text=_("Preset d'export :"), font=('Arial', 9, 'bold')).grid(
+        ttk.Label(self.parent, text=_("Preset d'export :"), font=get_font('small')).grid(
             row=5, column=0, sticky=tk.W, pady=2)
 
         preset_frame = ttk.Frame(self.parent)

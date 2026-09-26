@@ -18,6 +18,7 @@ from tkinter import ttk
 import warnings
 
 from src.i18n import _
+from src.gui.theme import get_font
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -66,7 +67,7 @@ class ToolTip:
         tw.wm_geometry(f"+{x}+{y}")
 
         label = ttk.Label(tw, text=self.text, background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-                          padding=(6, 3), font=("Arial", 9))
+                          padding=(6, 3), font=get_font('small'))
         label.pack()
 
     def _hide(self):
@@ -209,12 +210,12 @@ class RichToolTip:
         if title:
             tk.Label(
                 frame, text=title, bg=_TIP_BG, fg=_TIP_TITLE,
-                font=('Segoe UI', 10, 'bold'), justify=tk.LEFT,
+                font=get_font('body_bold'), justify=tk.LEFT,
                 anchor='w', padx=12, pady=8,
             ).pack(fill=tk.X)
         tk.Label(
             frame, text=text, bg=_TIP_BG, fg=_TIP_FG,
-            font=('Segoe UI', 9), justify=tk.LEFT, anchor='w',
+            font=get_font('small'), justify=tk.LEFT, anchor='w',
             padx=12, pady=6,
         ).pack(fill=tk.X)
 

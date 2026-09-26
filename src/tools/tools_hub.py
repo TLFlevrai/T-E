@@ -13,6 +13,7 @@ from src.core.command_registry import Command
 from src.core.tool import Tool
 from src.i18n import _
 from src.logger import setup_logger
+from src.gui.theme import get_font
 from src.ui.tooltips import ToolTipContent, add_lazy_rich_tooltip
 
 logger = setup_logger(__name__)
@@ -24,7 +25,7 @@ def build_tools_view(shell) -> ttk.Frame:
     frame.columnconfigure(0, weight=1)
 
     title = ttk.Label(frame, text=str(_("Outils")),
-                      font=('Segoe UI', 15, 'bold'))
+                      font=get_font('h1'))
     title.grid(row=0, column=0, sticky=tk.W, pady=(0, 14))
 
     # --- Personnalisation ---
@@ -54,7 +55,7 @@ def build_tools_view(shell) -> ttk.Frame:
     presets_frame.grid(row=9, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
     presets_frame.columnconfigure(0, weight=1)
     ttk.Label(presets_frame, text=str(_("Preset d'export")),
-              style='Card.TLabel', font=('Segoe UI', 10, 'bold')).grid(
+              style='Card.TLabel', font=get_font('body_bold')).grid(
         row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 8))
     presets = [
         ('python_only', "🐍", _("Preset : Python uniquement")),
@@ -85,7 +86,7 @@ def build_tools_view(shell) -> ttk.Frame:
 
 
 def _section(frame, row: int, label: str):
-    ttk.Label(frame, text=label, font=('Segoe UI', 9, 'bold'),
+    ttk.Label(frame, text=label, font=get_font('caption'),
               foreground='#888888').grid(row=row, column=0, sticky=tk.W, pady=(10, 4))
 
 
@@ -95,11 +96,11 @@ def _card(frame, row: int, icon: str, title: str, description: str, command):
     card.columnconfigure(1, weight=1)
 
     ttk.Label(card, text=icon, style='Card.TLabel',
-              font=('Segoe UI', 14)).grid(row=0, column=0, padx=(0, 10))
+              font=get_font('h2')).grid(row=0, column=0, padx=(0, 10))
     ttk.Label(card, text=title, style='Card.TLabel',
-              font=('Segoe UI', 10, 'bold')).grid(row=0, column=1, sticky=tk.W)
+              font=get_font('body_bold')).grid(row=0, column=1, sticky=tk.W)
     ttk.Label(card, text=description, style='Card.TLabel',
-              font=('Segoe UI', 9)).grid(row=1, column=1, sticky=tk.W)
+              font=get_font('small')).grid(row=1, column=1, sticky=tk.W)
     button = ttk.Button(card, text=str(_("Ouvrir")), style='AppGhost.TButton',
                         command=command)
     button.grid(row=0, column=2, rowspan=2, padx=(10, 0))

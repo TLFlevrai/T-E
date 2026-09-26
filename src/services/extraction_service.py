@@ -1,5 +1,5 @@
 # src/services/extraction_service.py
-from __future__ import annotations
+import os
 import shutil
 from pathlib import Path
 from typing import Optional, List, Callable, Tuple
@@ -8,7 +8,7 @@ from src.i18n import _
 from src.versioning import VersionManager
 from src.logger import setup_logger
 from src.services.interfaces import ICodeExtractor, IVersionManager
-from src.extractor.engine import ExtractionEngine, SUCCESS, FAILED, CANCELLED
+from src.extractor.engine import ExtractionEngine, SUCCESS, FAILED, CANCELLED, NO_SELECTION
 from src.extractor.context import ExtractionContext
 
 logger = setup_logger(__name__)
@@ -69,18 +69,22 @@ class ExtractionService:
             effective_output_dir = effective_output_dir / "out"
         
         effective_output_dir.mkdir(parents=True, exist_ok=True)
-        next_version = self.version_manager.get_next_version(folder_name, output_dir=effective_output_dir)
+        # FIX BUG #1 : Utiliser reserve_version pour éviter la race condition
+        next_version = self.version_manager.reserve_version(folder_name, output_dir=effective_output_dir)
         output_filename = effective_output_dir / f"{folder_name}v{next_version}.txt"
+        # FIX BUG #5 : Écrire dans un fichier .part puis rename atomique
+        output_part = output_filename.with_suffix('.txt.part')
 
         # Construire le contexte avec les options fusionnées
         selected_set = None
         if selected_files is not None:
-            selected_set = set(Path(f).as_posix() for f in selected_files)
+            # FIX BUG #7 : normaliser les chemins pour correspondre à engine._normalize_rel_path
+            selected_set = {ExtractionEngine._normalize_rel_path(f) for f in selected_files}
 
         context = ExtractionContext(
             folder_path=folder_path,
             options=extractor_options,
-            output_path=output_filename,
+            output_path=output_part,  # Écrire dans le fichier .part
             selected_files=selected_set
         )
 
@@ -91,11 +95,37 @@ class ExtractionService:
         result = engine.run(progress_callback, log_callback)
 
         if result == CANCELLED:
-            # Extraction annulée : on ne consomme pas la version
+            # Extraction annulée : le moteur a déjà supprimé le .part via _cleanup_partial_output
+            # Il faut aussi libérer la version réservée
+            self.version_manager.release_version(folder_name, next_version, output_dir=effective_output_dir)
             logger.info("Extraction annulée : %s", folder_name)
             return None, None, None
 
+        if result == NO_SELECTION:
+            # FIX BUG #7 : sélection vide (aucun fichier ne matche) -> traiter comme annulation
+            # Le moteur n'a pas créé de fichier, pas de .part à nettoyer
+            self.version_manager.release_version(folder_name, next_version, output_dir=effective_output_dir)
+            if log_callback:
+                log_callback(_("Aucun fichier sélectionné ne correspond"))
+            logger.info("Sélection vide : aucun fichier ne correspond pour %s", folder_name)
+            return None, None, None
+
         if result == SUCCESS:
+            # FIX BUG #5 : Rename atomique du .part vers le fichier final
+            try:
+                os.replace(output_part, output_filename)
+            except OSError as e:
+                logger.error("Erreur lors du rename atomique : %s", e)
+                # Nettoyer le .part si le rename échoue
+                try:
+                    output_part.unlink(missing_ok=True)
+                except Exception:
+                    pass
+                self.version_manager.release_version(folder_name, next_version, output_dir=effective_output_dir)
+                return False, None, None
+
+            # Version déjà réservée et mapping mis à jour, on confirme juste
+            # (use_version gardé pour compatibilité mais ne fait plus grand-chose ici)
             self.version_manager.use_version(folder_name, next_version)
             stats = context.stats
             stats_dict = {
@@ -121,6 +151,12 @@ class ExtractionService:
             logger.info("Extraction réussie : %s", output_filename)
             return True, str(output_filename), stats_dict
         else:
+            # Échec : supprimer le .part s'il existe et libérer la version réservée
+            try:
+                output_part.unlink(missing_ok=True)
+            except Exception:
+                pass
+            self.version_manager.release_version(folder_name, next_version, output_dir=effective_output_dir)
             logger.error("Échec de l'extraction")
             return False, None, None
 

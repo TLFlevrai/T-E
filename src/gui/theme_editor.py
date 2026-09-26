@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, colorchooser
 from src.i18n import _
 from src.config import get_config
-from src.gui.theme import THEMES, apply_theme
+from src.gui.theme import THEMES, apply_theme, get_font
 from src.logger import setup_logger
 from .base_dialog import BaseDialog
 
@@ -59,7 +59,7 @@ class ThemeEditorDialog(BaseDialog):
         main.pack(fill=tk.BOTH, expand=True)
 
         # Titre
-        title = ttk.Label(main, text=_("Personnalisation du thème"), font=('Arial', 14, 'bold'))
+        title = ttk.Label(main, text=_("Personnalisation du thème"), font=get_font('h1'))
         title.pack(pady=(0, 15))
 
         # Notebook pour organiser les catégories

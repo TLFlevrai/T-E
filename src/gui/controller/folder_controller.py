@@ -8,6 +8,7 @@ from src.gui.folder_scanner import scan_folder
 from src.gui.recent_files import add_recent_folder, remove_recent_folder
 from src.i18n import _
 from src.logger import setup_logger
+from src.config import ExtractionOptions
 
 logger = setup_logger(__name__)
 
@@ -83,7 +84,9 @@ class FolderController(BaseController):
         """Affiche les statistiques du dossier dans le journal."""
         self.add_info(_("Dossier sélectionné : {}").format(self._selected_folder))
 
-        stats = scan_folder(self._selected_folder, self.ui)
+        # FIX BUG #8 : utiliser les mêmes options que l'extraction
+        options = ExtractionOptions(**self.get_extraction_options())
+        stats = scan_folder(self._selected_folder, options)
         self.add_info(_("Fichiers trouvés : {}").format(stats['total']))
         for ext, count in stats['types'].items():
             if count > 0:
