@@ -140,6 +140,17 @@ def get_font(name: str):
         return (font_spec[0](), *font_spec[1:])
     
     # Nouveau format : (family1, family2, ..., size, [weight])
+    # Le dernier élément est soit le size (int) soit le weight (str)
+    # L'avant-dernier est le size si le dernier est un weight
+    if isinstance(font_spec[-1], str):
+        # Format avec weight : (families..., size, weight)
+        size = font_spec[-2]
+        weight = font_spec[-1]
+    else:
+        # Format sans weight : (families..., size)
+        size = font_spec[-1]
+        weight = None
+    
     # Résout la famille
     if name == 'display':
         family = _get_display_family()
@@ -147,7 +158,9 @@ def get_font(name: str):
         family = _get_resolved_font_family(name)
     
     # Retourne (famille_résolue, taille, [style])
-    return (family, *font_spec[-2:])
+    if weight:
+        return (family, size, weight)
+    return (family, size)
 
 # ---------------------------------------------------------------------------
 # Palettes (tokens complets)
@@ -244,6 +257,14 @@ RADIUS_TOKENS = {
     'sm': 4,   # champs, petites pill
     'md': 8,   # cartes, boutons
     'lg': 12,  # dialogues, surfaces majeures
+}
+
+
+# Thème neutre historique (editeur de theme : "Reinitialiser")
+THEMES = {
+    'light': dict(PALETTES['light']),
+    'dark': dict(PALETTES['dark']),
+    'default': dict(PALETTES['light']),
 }
 
 _current_palette_name = 'light'
