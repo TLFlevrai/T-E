@@ -148,12 +148,19 @@ class TestReloadTranslations:
 class TestChangeLanguage:
     """Tests de changement de langue."""
     
-    def test_change_language_returns_bool(self):
-        """Test que change_language retourne un booléen."""
-        import src.i18n as i18n_module
-        # Sans config.json valide, ça peut échouer mais doit retourner bool
-        result = i18n_module.change_language("en")
-        assert isinstance(result, bool)
+    def test_change_language_returns_bool(self, tmp_path, monkeypatch):
+        """Test que change_language retourne un booléen sans polluer le config.json réel."""
+        config_path = tmp_path / "config.json"
+        config_path.write_text('{"language": "fr"}', encoding="utf-8")
+        monkeypatch.setattr("src.config.CONFIG_PATH", config_path)
+        from src.config import _Config
+        _Config._reset_for_testing()
+        try:
+            import src.i18n as i18n_module
+            result = i18n_module.change_language("en")
+            assert isinstance(result, bool)
+        finally:
+            _Config._reset_for_testing()
 
 
 class TestPgettext:

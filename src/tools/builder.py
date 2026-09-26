@@ -18,6 +18,7 @@ from typing import Any
 
 from src.core.command_registry import Command
 from src.core.tool import Tool
+from src.gui.app_guard import safe_after
 from src.i18n import _
 from src.logger import setup_logger
 
@@ -50,6 +51,7 @@ _SECTION_SPLITTER = re.compile(r"\n={10,}\nFICHIER\s+")
 _HEADER_LINE_RE = re.compile(r"^(\w+)\s*:\s*(.+)$")
 _SOURCE_FOLDER_RE = re.compile(r"Extraction du code du dossier\s*:\s*(.+?)\n")
 _DATE_RE = re.compile(r"Date d'extraction\s*:\s*(.+?)\n")
+_FORMAT_VERSION_RE = re.compile(r"Format-Version\s*:\s*(\d+)")
 
 # Patterns de contenu
 _MO_BASE64_RE = re.compile(
@@ -131,6 +133,7 @@ class BuildPlan:
         self.files: list[ParsedFile] = []
         self.original_folder: str | None = None
         self.extraction_date: str | None = None
+        self.format_version: int = 0  # 0 = legacy (v0), 1 = v1
         self.total_files = 0
         self.binary_count = 0
         self.ignored_count = 0
@@ -156,6 +159,7 @@ class BuildPlan:
             'conflicts': len(self.conflicts),
             'original_folder': self.original_folder,
             'extraction_date': self.extraction_date,
+            'format_version': self.format_version,
         }
 
 
@@ -175,6 +179,13 @@ def validate_log(content: str) -> tuple[bool, str]:
 
     if _END_MARKER not in content:
         return False, str(_("Marqueur de fin de fichier introuvable."))
+
+    # Vérifier Format-Version si présent
+    version_match = _FORMAT_VERSION_RE.search(content)
+    if version_match:
+        version = int(version_match.group(1))
+        if version != 1:
+            return False, str(_("Format-Version {version} non supportée. Seule la version 1 est gérée.").format(version=version))
 
     # Vérifier qu'il y a au moins une section
     sections = _SECTION_SPLITTER.split(content)
@@ -199,6 +210,13 @@ def parse_log(content: str) -> BuildPlan:
     date_match = _DATE_RE.search(content)
     if date_match:
         plan.extraction_date = date_match.group(1).strip()
+
+    # Extraire Format-Version (défaut 0 = legacy)
+    version_match = _FORMAT_VERSION_RE.search(content)
+    if version_match:
+        plan.format_version = int(version_match.group(1))
+    else:
+        plan.format_version = 0  # Legacy v0
 
     # Séparer les sections
     sections = _SECTION_SPLITTER.split(content)
@@ -712,10 +730,10 @@ def build_builder_view(shell) -> ttk.Frame:
 
         def run() -> None:
             def on_progress(cur, total, path):
-                frame.after(0, lambda: _on_progress(cur, total, path))
+                safe_after(frame, 0, lambda: _on_progress(cur, total, path))
 
             def on_log_msg(msg, level='info'):
-                frame.after(0, lambda: _log(msg))
+                safe_after(frame, 0, lambda: _log(msg))
 
             stats = build_project(
                 plan, dest,
@@ -743,7 +761,7 @@ def build_builder_view(shell) -> ttk.Frame:
                 dry_btn.config(state='normal')
                 preview_btn.config(state='normal')
 
-            frame.after(0, finish)
+            safe_after(frame, 0, finish)
 
         Thread(target=run, daemon=True).start()
 

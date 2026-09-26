@@ -96,9 +96,7 @@ def server_env(tmp_path, monkeypatch):
         },
     }), encoding='utf-8')
 
-    import src.config
-    original_path = src.config.CONFIG_PATH
-    src.config.CONFIG_PATH = config_path
+    monkeypatch.setattr('src.config.CONFIG_PATH', config_path)
     from src.config import _Config
     _Config._reset_for_testing()
 
@@ -125,7 +123,6 @@ def server_env(tmp_path, monkeypatch):
 
     server.stop()
     server.join(timeout=3)
-    src.config.CONFIG_PATH = original_path
     _Config._reset_for_testing()
 
 

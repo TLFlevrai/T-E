@@ -39,6 +39,7 @@ class UIWidgets:
     # Other options
     archive_old: tk.BooleanVar = field(default_factory=lambda: tk.BooleanVar(value=False))
     log_visible: tk.BooleanVar = field(default_factory=lambda: tk.BooleanVar(value=True))
+    sidebar_visible: tk.BooleanVar = field(default_factory=lambda: tk.BooleanVar(value=True))
     
     # Widgets (populated by build_widgets)
     browse_btn: ttk.Button = None
@@ -97,6 +98,7 @@ def create_ui_widgets(config_obj) -> UIWidgets:
         ignore_pycache=tk.BooleanVar(value=cfg.extraction.ignore_pycache),
         include_statistics=tk.BooleanVar(value=cfg.extraction.include_statistics),
         include_file_metadata=tk.BooleanVar(value=cfg.extraction.include_file_metadata),
+        sidebar_visible=tk.BooleanVar(value=True),
     )
     
     return ui

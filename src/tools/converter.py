@@ -12,9 +12,7 @@ Modes :
 from __future__ import annotations
 
 import csv
-import io
 import json
-import os
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -106,20 +104,20 @@ def _build_document_tab(parent) -> ttk.Frame:
 
         def run():
             try:
-                progress['value'] = 20
+                safe_after(frame, 0, lambda: progress.config(value=20))
                 if mode == "txt_to_pdf":
                     _convert_txt_to_pdf(src, dst, encoding, log_text)
                 elif mode == "pdf_to_txt":
                     _convert_pdf_to_txt(src, dst, encoding, log_text)
                 elif mode == "json_to_txt":
                     _convert_json_to_txt(src, dst, encoding, indent_var.get(), log_text)
-                progress['value'] = 100
+                safe_after(frame, 0, lambda: progress.config(value=100))
                 _log(log_text, f"✓ {dst.name}")
             except Exception as exc:
                 _log(log_text, f"✗ {exc}")
-                messagebox.showerror(str(_("Erreur")), str(exc))
+                safe_after(frame, 0, lambda e=exc: messagebox.showerror(str(_("Erreur")), str(e)))
             finally:
-                progress['value'] = 0
+                safe_after(frame, 0, lambda: progress.config(value=0))
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -212,18 +210,18 @@ def _build_video_tab(parent) -> ttk.Frame:
         def run():
             try:
                 _log(log_text, f"→ {src.name}")
-                progress['value'] = 10
+                safe_after(frame, 0, lambda: progress.config(value=10))
 
                 def _on_progress(msg):
                     _log(log_text, f"  {msg}")
 
                 def _on_complete(success, error):
                     if success:
-                        progress['value'] = 100
+                        safe_after(frame, 0, lambda: progress.config(value=100))
                         _log(log_text, f"✓ {dst.name}")
                     else:
                         _log(log_text, f"✗ {error}")
-                    progress['value'] = 0
+                    safe_after(frame, 0, lambda: progress.config(value=0))
 
                 converter.convert(src, dst, opts, on_progress=_on_progress, on_complete=_on_complete)
             except Exception as exc:
@@ -295,7 +293,7 @@ def _build_image_tab(parent) -> ttk.Frame:
         def run():
             try:
                 from PIL import Image
-                progress['value'] = 30
+                safe_after(frame, 0, lambda: progress.config(value=30))
                 img = Image.open(src)
                 if resize and w and h:
                     img = img.resize((w, h), Image.LANCZOS)
@@ -303,13 +301,13 @@ def _build_image_tab(parent) -> ttk.Frame:
                     if img.mode in ('RGBA', 'P'):
                         img = img.convert('RGB')
                 img.save(dst)
-                progress['value'] = 100
+                safe_after(frame, 0, lambda: progress.config(value=100))
                 _log(log_text, f"✓ {src.name} → {dst.name}")
             except Exception as exc:
                 _log(log_text, f"✗ {exc}")
-                messagebox.showerror(str(_("Erreur")), str(exc))
+                safe_after(frame, 0, lambda e=exc: messagebox.showerror(str(_("Erreur")), str(e)))
             finally:
-                progress['value'] = 0
+                safe_after(frame, 0, lambda: progress.config(value=0))
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -364,7 +362,7 @@ def _build_csv_tab(parent) -> ttk.Frame:
 
         def run():
             try:
-                progress['value'] = 30
+                safe_after(frame, 0, lambda: progress.config(value=30))
                 rows = []
                 with open(src, 'r', encoding=encoding, errors='replace') as f:
                     reader = csv.DictReader(f, delimiter=delimiter)
@@ -372,13 +370,13 @@ def _build_csv_tab(parent) -> ttk.Frame:
                         rows.append(dict(row))
                 formatted = json.dumps(rows, indent=2 if indent_var.get() else None, ensure_ascii=False)
                 dst.write_text(formatted, encoding=encoding)
-                progress['value'] = 100
+                safe_after(frame, 0, lambda: progress.config(value=100))
                 _log(log_text, f"✓ {src.name} → {dst.name} ({len(rows)} lignes)")
             except Exception as exc:
                 _log(log_text, f"✗ {exc}")
-                messagebox.showerror(str(_("Erreur")), str(exc))
+                safe_after(frame, 0, lambda e=exc: messagebox.showerror(str(_("Erreur")), str(e)))
             finally:
-                progress['value'] = 0
+                safe_after(frame, 0, lambda: progress.config(value=0))
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -430,15 +428,15 @@ def _build_audio_tab(parent) -> ttk.Frame:
 
         def run():
             try:
-                progress['value'] = 30
+                safe_after(frame, 0, lambda: progress.config(value=30))
                 _convert_audio_file(src, dst, log_text)
-                progress['value'] = 100
+                safe_after(frame, 0, lambda: progress.config(value=100))
                 _log(log_text, f"✓ {src.name} → {dst.name}")
             except Exception as exc:
                 _log(log_text, f"✗ {exc}")
-                messagebox.showerror(str(_("Erreur")), str(exc))
+                safe_after(frame, 0, lambda e=exc: messagebox.showerror(str(_("Erreur")), str(e)))
             finally:
-                progress['value'] = 0
+                safe_after(frame, 0, lambda: progress.config(value=0))
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -515,12 +513,12 @@ def _build_batch_tab(parent) -> ttk.Frame:
                     except Exception as exc:
                         fail += 1
                         _log(log_text, f"  ✗ {src.name}: {exc}")
-                progress['value'] = 100
+                safe_after(frame, 0, lambda: progress.config(value=100))
                 _log(log_text, f"Terminé : {ok} OK, {fail} erreurs")
             except Exception as exc:
                 _log(log_text, f"✗ {exc}")
             finally:
-                progress['value'] = 0
+                safe_after(frame, 0, lambda: progress.config(value=0))
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -665,7 +663,13 @@ def _convert_audio_file(src: Path, dst: Path, log_text=None):
         if log_text:
             _log(log_text, f"  ✓ {src.name} → {dst.name} (copié, même format)")
         return
-    
+
+    # Vérifier ffmpeg tôt pour message clair
+    import shutil as shutil_mod
+    ffmpeg_path = shutil_mod.which('ffmpeg')
+    if not ffmpeg_path:
+        raise RuntimeError("ffmpeg non trouvé dans le PATH. Installez ffmpeg pour la conversion audio.")
+
     try:
         from pydub import AudioSegment
         fmt = dst.suffix.lstrip('.')

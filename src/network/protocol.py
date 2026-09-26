@@ -9,6 +9,7 @@ Format v1 (avec magic + version) :
   payload = format v0 ci-dessus
 """
 from __future__ import annotations
+import socket
 import struct
 from typing import Optional, Tuple
 
@@ -59,7 +60,6 @@ def read_v1_message(conn, timeout: float = 5.0) -> Optional[bytes]:
     Returns:
         payload complet (format v0) ou None si erreur/timeout
     """
-    import socket
     original_timeout = conn.gettimeout()
     try:
         conn.settimeout(timeout)
@@ -106,7 +106,6 @@ def read_v1_message(conn, timeout: float = 5.0) -> Optional[bytes]:
 
 def write_v1_message(conn, payload: bytes, auth_enabled: bool = True) -> bool:
     """Écrit un message complet v1 sur la connexion."""
-    import socket
     original_timeout = conn.gettimeout()
     try:
         conn.settimeout(10.0)

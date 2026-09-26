@@ -67,7 +67,7 @@ class ReceiveServer(threading.Thread):
 
         # Auth config
         self.auth_enabled = cfg.get('network.auth_enabled', True)
-        self.auth_token = str(cfg.get('network.auth_token', 'change-me-secure-random-token')).encode('utf-8')
+        self.auth_token = str(cfg.get('network.auth_token', 'change-me-secure-random-token')).strip().encode('utf-8')
         # Normalisation : les comparaisons se font en minuscules côté serveur,
         # la config doit donc être normalisée ici ('.TXT' et '.txt' doivent marcher)
         raw_extensions = cfg.get('network.allowed_extensions', ['.txt']) or ['.txt']
@@ -122,33 +122,6 @@ class ReceiveServer(threading.Thread):
         if len(filename) > ReceiveServer.MAX_FILENAME_LEN:
             filename = filename[:ReceiveServer.MAX_FILENAME_LEN]
         return filename
-
-    def _verify_auth(self, conn) -> bool:
-        """Vérifie le token HMAC-SHA256 envoyé par le client."""
-        if not self.auth_enabled:
-            return True
-
-        try:
-            # Lire la taille du token (2 bytes)
-            token_len_bytes = recv_exact(conn, 2)
-            if len(token_len_bytes) != 2:
-                return False
-            token_len = int.from_bytes(token_len_bytes, 'big')
-
-            if token_len > 1024:  # Protection DoS
-                return False
-
-            # Lire le token client
-            client_token = recv_exact(conn, token_len)
-            if len(client_token) != token_len:
-                return False
-
-            # Vérification HMAC en temps constant
-            expected = hmac.new(self.auth_token, b'PYEXTRACTOR_AUTH', 'sha256').digest()
-            return hmac.compare_digest(client_token, expected)
-
-        except Exception:
-            return False
 
     def run(self):
         # Sécurité : refuser d'exposer le serveur hors de la machine locale avec

@@ -428,8 +428,9 @@ pre {{ white-space: pre-wrap; word-wrap: break-word; }}
         state['search_visible'] = not state['search_visible']
         if state['search_visible']:
             search_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 4))
-            if 'search_entry' in state:
-                state['search_entry'].focus_set()
+            entry = state.get('search_entry')
+            if entry is not None:
+                entry.focus_set()
         else:
             search_frame.grid_forget()
 

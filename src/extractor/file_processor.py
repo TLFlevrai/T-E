@@ -41,7 +41,14 @@ class FileProcessor:
         N'ÉCRIT PAS sur le disque.
         """
         file_type = self._get_file_type(ext)
-        content, num_lines, file_size, read_ok = self.reader.read_file_content(full_path, ext)
+        opts = self.context.options
+        content, num_lines, file_size, read_ok = self.reader.read_file_content(
+            full_path,
+            ext,
+            detect_binary=getattr(opts, 'detect_binary', True),
+            max_file_size_mb=getattr(opts, 'max_file_size_mb', 10),
+            line_range=getattr(opts, 'line_range', None),
+        )
 
         self.last_read_ok = read_ok
 

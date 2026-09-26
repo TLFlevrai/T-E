@@ -1,6 +1,7 @@
 # src/config/schema.py
 from __future__ import annotations
 import secrets
+from typing import Optional, Tuple
 from pydantic import BaseModel, Field
 
 
@@ -38,6 +39,10 @@ class ExtractionOptions(BaseModel):
     ignore_pycache: bool = Field(default=True, description="Ignorer les dossiers __pycache__ et leur contenu")
     include_statistics: bool = Field(default=True, description="Inclure les statistiques dans l'export")
     include_file_metadata: bool = Field(default=False, description="Inclure les métadonnées par fichier (taille, lignes)")
+    detect_binary: bool = Field(default=True, description="Détecter et exclure les fichiers binaires déguisés")
+    max_file_size_mb: int = Field(default=10, ge=1, le=1000, description="Taille max par fichier (Mo)")
+    max_total_size_mb: Optional[int] = Field(default=None, ge=1, description="Taille totale max de l'export (Mo)")
+    line_range: Optional[Tuple[int, int]] = Field(default=None, description="Plage de lignes à extraire (début, fin) par fichier")
 
 
 class GuiConfig(BaseModel):

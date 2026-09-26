@@ -75,6 +75,12 @@ def _cmd_clear_log(shell) -> None:
         controller.clear_info()
 
 
+def _cmd_toggle_sidebar(shell) -> None:
+    """Toggle la visibilité de la barre latérale."""
+    if hasattr(shell, 'toggle_sidebar'):
+        shell.toggle_sidebar()
+
+
 TOOL = Tool(
     id='extract',
     name="Archiviste",
@@ -120,4 +126,13 @@ def register(reg, cmds) -> None:
         tool_id='extract',
         keywords=('journal', 'log', 'effacer', 'clear', 'vider'),
         handler=_cmd_clear_log,
+    ))
+    cmds.register(Command(
+        id='extract.toggle_sidebar',
+        label="Basculer la barre latérale",
+        description="Afficher ou masquer la barre latérale de sélection des outils",
+        shortcut='Ctrl+B',
+        icon='☰',
+        keywords=('sidebar', 'barre', 'latérale', 'outils', 'toggle', 'masquer', 'afficher'),
+        handler=_cmd_toggle_sidebar,
     ))

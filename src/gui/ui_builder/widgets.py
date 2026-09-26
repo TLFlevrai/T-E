@@ -12,6 +12,7 @@ logger = setup_logger(__name__)
 
 
 def build_widgets(parent, ui: UIWidgets):
+    assert ui.controller is not None, "ui.controller must be set before calling build_widgets"
     main_frame = ttk.Frame(parent, padding=16)
     main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
     ui.main_frame = main_frame
@@ -103,6 +104,19 @@ def build_widgets(parent, ui: UIWidgets):
     ui.network_btn = network_btn
     register_lazy_widget(ui, network_btn, "Réseau")
     tooltip = add_lazy_tooltip(network_btn, "Ouvrir le centre de transfert réseau")
+    ui._lazy_tooltips.append(tooltip)
+
+    # --- Toggle sidebar (afficher/masquer la sélection d'outils) ---
+    sidebar_toggle_btn = ttk.Button(
+        action_frame,
+        text=str(LazyString("☰ Outils")),
+        style='AppGhost.TButton',
+        command=lambda: ui.controller.shell.toggle_sidebar() if ui.controller and hasattr(ui.controller, 'shell') else None,
+    )
+    sidebar_toggle_btn.pack(side=tk.RIGHT, padx=6)
+    ui.sidebar_toggle_btn = sidebar_toggle_btn
+    register_lazy_widget(ui, sidebar_toggle_btn, "☰ Outils")
+    tooltip = add_lazy_tooltip(sidebar_toggle_btn, "Afficher/masquer la barre latérale des outils (Ctrl+B)")
     ui._lazy_tooltips.append(tooltip)
 
     # --- Progression : barre + pourcentage ---

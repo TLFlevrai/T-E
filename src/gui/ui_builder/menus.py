@@ -154,11 +154,13 @@ def _rebuild_all_menus(parent, ui: UIWidgets):
     menu_items['view_menu'] = view_menu
     menu_items['view_cascade_index'] = 4
     view_menu.add_checkbutton(label=_("Afficher le journal"), variable=ui.log_visible)
+    view_menu.add_checkbutton(label=_("Afficher la barre latérale"), variable=ui.sidebar_visible,
+                              command=lambda: _toggle_sidebar(ui))
     ui.view_menu = view_menu
 
 
 def _navigate(ui: UIWidgets, tool_id: str):
-    """Navigue vers un outil du workspace (repli : dialogue dédié)."""
+    """Navigue vers un outil du workspace (repli : dialogue en repli)."""
     navigator = getattr(ui, 'navigate_to', None)
     if navigator:
         navigator(tool_id)
@@ -178,6 +180,13 @@ def _navigate(ui: UIWidgets, tool_id: str):
             open_video_converter(root)
     elif tool_id == 'calculator':
         _open_calculator(None)
+
+
+def _toggle_sidebar(ui: UIWidgets):
+    """Bascule la visibilité de la barre latérale via le shell."""
+    controller = getattr(ui, 'controller', None)
+    if controller and hasattr(controller, 'shell') and hasattr(controller.shell, 'toggle_sidebar'):
+        controller.shell.toggle_sidebar()
 
 
 def _change_language_hot(ui: UIWidgets, lang_code):

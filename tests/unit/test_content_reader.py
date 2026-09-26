@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.extractor.content_reader import ContentReader, MAX_FILE_SIZE
+from src.extractor.content_reader import ContentReader
 
 
 class TestContentReader:
@@ -34,9 +34,9 @@ class TestContentReader:
 
     def test_read_large_file_rejected(self, tmp_path):
         file = tmp_path / "large.txt"
-        # Créer un fichier plus grand que MAX_FILE_SIZE
-        file.write_bytes(b'x' * (MAX_FILE_SIZE + 1))
-        content, lines, size, ok = ContentReader.read_file_content(file, '.txt')
+        # Créer un fichier plus grand que 10 Mo (défaut)
+        file.write_bytes(b'x' * (11 * 1024 * 1024))
+        content, lines, size, ok = ContentReader.read_file_content(file, '.txt', max_file_size_mb=10)
         assert ok is False
         assert "volumineux" in content
 

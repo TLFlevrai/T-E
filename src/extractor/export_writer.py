@@ -12,6 +12,7 @@ def write_header(output_file, folder):
     output_file.write(f"{_('Extraction du code du dossier')} : {folder}\n")
     date_label = _("Date d'extraction")
     output_file.write(f"{date_label} : {get_current_date()}\n")
+    output_file.write("Format-Version: 1\n")
     output_file.write("=" * 80 + "\n\n")
 
 
