@@ -6,14 +6,23 @@ Identité visuelle « Graphite & Cyan » :
 - accent cyan/teal unique, utilisé avec parcimonie (action primaire,
   sélection, focus) ;
 - rendu flat précis (base `clam`) : bordures fines 1px, pas de gradients ;
-- typographie Segoe UI hiérarchisée (titres / corps / secondaire).
+- typographie Segoe UI Variable hiérarchisée (titres / corps / secondaire).
 
-Toutes les couleurs passent par les tokens : aucun code hexadécimal
-dispersé dans l'application (utiliser `get_color(key)`).
+Toutes les couleurs, polices et espacements passent par les tokens :
+aucun code hexadécimal, police ou padding hardcodé dispersé dans
+l'application (utiliser `get_color(key)`, `get_font(key)`, `sp(key)`).
+
+Comment étendre :
+- Pour ajouter un espacement : ajouter la clé dans SPACING, utiliser `sp('new_key')`
+- Pour ajouter une police : ajouter la clé dans FONT, utiliser `get_font('new_key')`
+- Pour ajouter une couleur : ajouter la clé dans PALETTES['light'] ET
+  PALETTES['dark'], utiliser `get_color('new_key')`
+- NE JAMAIS hardcoder de valeur hors de ce fichier.
 """
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkfont
 
 from src.config import get_config
 from src.logger import setup_logger
@@ -25,12 +34,24 @@ logger = setup_logger(__name__)
 # ---------------------------------------------------------------------------
 
 SPACING = {
+    'xxs': 2,
     'xs': 4,
     'sm': 8,
     'md': 12,
     'lg': 16,
     'xl': 24,
     'xxl': 32,
+    'xxxl': 48,
+}
+
+FONT_SIZES = {
+    'xs': 8,
+    'sm': 9,
+    'base': 10,
+    'md': 11,
+    'lg': 13,
+    'xl': 15,
+    'xxl': 20,
 }
 
 RADIUS = {
@@ -39,16 +60,94 @@ RADIUS = {
     'lg': 12,  # dialogues, surfaces majeures
 }
 
+_font_family_cache = {}
+_display_family_cache = {}
+
+def _resolve_font_family(families: tuple) -> str:
+    """Résout la première famille de police disponible dans l'ordre de priorité."""
+    try:
+        available = set(tkfont.families())
+    except RuntimeError:
+        # Pas de root Tk encore - retourne la première famille comme fallback
+        return families[0]
+    for family in families:
+        if family in available:
+            return family
+    return 'TkDefaultFont'
+
+def _get_resolved_font_family(key: str) -> str:
+    """Résout et met en cache la famille de police pour une clé FONT."""
+    if key in _font_family_cache:
+        return _font_family_cache[key]
+    
+    font_spec = FONT[key]
+    # La famille est le premier élément, le reste sont les options (taille, style)
+    families = font_spec[:-2] if len(font_spec) > 2 and isinstance(font_spec[-2], int) else font_spec[:-1]
+    resolved = _resolve_font_family(families)
+    _font_family_cache[key] = resolved
+    return resolved
+
+def _get_display_family() -> str:
+    """Résout et met en cache la famille display."""
+    if 'display' in _display_family_cache:
+        return _display_family_cache['display']
+    
+    font_spec = FONT['display']
+    families = font_spec[:-2] if len(font_spec) > 2 and isinstance(font_spec[-2], int) else font_spec[:-1]
+    try:
+        available = set(tkfont.families())
+    except RuntimeError:
+        _display_family_cache['display'] = families[0]
+        return families[0]
+    for family in families:
+        if family in available:
+            _display_family_cache['display'] = family
+            return family
+    _display_family_cache['display'] = 'TkDefaultFont'
+    return 'TkDefaultFont'
+
 FONT = {
-    'family': 'Segoe UI',
-    'display': ('Segoe UI', 20, 'bold'),     # titre de page
-    'h1': ('Segoe UI', 15, 'bold'),          # titre d'outil
-    'h2': ('Segoe UI', 11, 'bold'),          # titre de carte
-    'body': ('Segoe UI', 10),                # texte courant
-    'small': ('Segoe UI', 9),                # secondaire
-    'caption': ('Segoe UI', 8),              # hints, catégories
-    'mono': ('Consolas', 9),                 # journal
+    'family': ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont'),
+    'display': ('Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont'),
+    'h1':        ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 18, 'bold'),
+    'h2':        ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 14, 'bold'),
+    'h3':        ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 12, 'bold'),
+    'body':      ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 10),
+    'body_bold': ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 10, 'bold'),
+    'small':     ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 9),
+    'caption':   ('Segoe UI Variable Text', 'Segoe UI', 'Helvetica', 'TkDefaultFont', 8),
+    'mono':      ('Cascadia Code', 'Consolas', 'TkFixedFont', 10),
+    'mono_sm':   ('Cascadia Code', 'Consolas', 'TkFixedFont', 9),
 }
+
+# ---------------------------------------------------------------------------
+# Helpers d'accès aux tokens
+# ---------------------------------------------------------------------------
+
+def sp(key: str) -> int:
+    """Retourne un token d'espacement. Ex: sp('md') -> 12"""
+    return SPACING.get(key, SPACING['md'])
+
+def fk(key: str) -> tuple:
+    """Retourne un token de police. Ex: fk('body') -> ('Segoe UI Variable Text', 10)"""
+    return FONT.get(key, FONT['body'])
+
+def get_font(name: str):
+    """Retourne une police du système de design (résout la famille lazy)."""
+    font_spec = FONT.get(name, FONT['body'])
+    if isinstance(font_spec[0], tuple):
+        # Ancien format avec callable - ne devrait plus arriver
+        return (font_spec[0](), *font_spec[1:])
+    
+    # Nouveau format : (family1, family2, ..., size, [weight])
+    # Résout la famille
+    if name == 'display':
+        family = _get_display_family()
+    else:
+        family = _get_resolved_font_family(name)
+    
+    # Retourne (famille_résolue, taille, [style])
+    return (family, *font_spec[-2:])
 
 # ---------------------------------------------------------------------------
 # Palettes (tokens complets)
@@ -76,8 +175,16 @@ PALETTES = {
         'accent_soft': '#D7EEF5',       # fond teinté (chips, icônes, actif)
         # Sémantiques
         'success': '#15803D',
+        'success_soft': '#D1FADF',      # fond teinté succès
         'warning': '#B45309',
+        'warning_soft': '#FEF3C7',      # fond teinté avertissement
         'error': '#B91C1C',
+        'error_soft': '#FEE2E2',        # fond teinté erreur
+        'info_soft': '#DBEAFE',         # fond teinté info
+        # Danger (action destructive)
+        'danger': '#B91C1C',
+        'danger_hover': '#991B1B',
+        'danger_fg': '#FFFFFF',
         # Sélection
         'select_bg': '#0E7490',
         'select_fg': '#FFFFFF',
@@ -89,8 +196,9 @@ PALETTES = {
         'text_bg': '#FFFFFF',
         'text_fg': '#191D23',
         # Toasts / overlays
-        'overlay': '#232A33',
+        'overlay_bg': '#232A33',
         'overlay_fg': '#ECF2F6',
+        'overlay_accent': '#0E7490',
     },
     'dark': {
         'bg': '#12151A',
@@ -108,8 +216,15 @@ PALETTES = {
         'accent_fg': '#10151B',
         'accent_soft': '#17323C',
         'success': '#4ADE80',
+        'success_soft': '#064E3B',      # fond teinté succès
         'warning': '#FBBF24',
+        'warning_soft': '#78350F',      # fond teinté avertissement
         'error': '#F87171',
+        'error_soft': '#7F1D1D',        # fond teinté erreur
+        'info_soft': '#1E3A5F',         # fond teinté info
+        'danger': '#F87171',
+        'danger_hover': '#EF4444',
+        'danger_fg': '#10151B',
         'select_bg': '#155E75',
         'select_fg': '#ECFEFF',
         'entry_bg': '#1B2027',
@@ -118,16 +233,17 @@ PALETTES = {
         'button_fg': '#E7EBF0',
         'text_bg': '#161B21',
         'text_fg': '#E7EBF0',
-        'overlay': '#262E38',
+        'overlay_bg': '#262E38',
         'overlay_fg': '#ECF2F6',
+        'overlay_accent': '#22D3EE',
     },
 }
 
-# Thème neutre historique (éditeur de thème : "Réinitialiser")
-THEMES = {
-    'light': dict(PALETTES['light']),
-    'dark': dict(PALETTES['dark']),
-    'default': dict(PALETTES['light']),
+# Rayons (section séparée, partagés light/dark)
+RADIUS_TOKENS = {
+    'sm': 4,   # champs, petites pill
+    'md': 8,   # cartes, boutons
+    'lg': 12,  # dialogues, surfaces majeures
 }
 
 _current_palette_name = 'light'
@@ -137,11 +253,6 @@ _current_palette: dict = dict(PALETTES['light'])
 def get_color(key: str) -> str:
     """Retourne la valeur courante d'un token couleur."""
     return _current_palette.get(key, _current_palette['fg'])
-
-
-def get_font(name: str):
-    """Retourne une police du système de design."""
-    return FONT.get(name, FONT['body'])
 
 
 def get_system_theme() -> str:
@@ -248,14 +359,14 @@ def _apply_base_styles(style: ttk.Style, c: dict):
 
     # Frames & labels
     style.configure('TFrame', background=c['bg'])
-    style.configure('TLabel', background=c['bg'], foreground=c['fg'], font=FONT['body'])
-    style.configure('Muted.TLabel', background=c['bg'], foreground=c['fg_muted'], font=FONT['small'])
-    style.configure('Caption.TLabel', background=c['bg'], foreground=c['fg_muted'], font=FONT['caption'])
+    style.configure('TLabel', background=c['bg'], foreground=c['fg'], font=get_font('body'))
+    style.configure('Muted.TLabel', background=c['bg'], foreground=c['fg_muted'], font=get_font('small'))
+    style.configure('Caption.TLabel', background=c['bg'], foreground=c['fg_muted'], font=get_font('caption'))
 
     # Bouton standard : discret, bordure fine
     style.configure('TButton', background=c['surface'], foreground=c['fg'],
                     bordercolor=c['border'], borderwidth=1, focalthickness=1,
-                    padding=(14, 7), font=FONT['body'], relief='flat')
+                    padding=(14, 7), font=get_font('body'), relief='flat')
     style.map('TButton',
               background=[('active', c['surface_alt']), ('pressed', c['surface_active']),
                           ('disabled', c['surface_alt'])],
@@ -300,7 +411,7 @@ def _apply_base_styles(style: ttk.Style, c: dict):
 
     # Checkboxes / radios : indicateur accentué
     style.configure('TCheckbutton', background=c['bg'], foreground=c['fg'],
-                    focuscolor=c['accent'], font=FONT['body'], padding=(2, 3))
+                    focuscolor=c['accent'], font=get_font('body'), padding=(2, 3))
     style.map('TCheckbutton',
               background=[('active', c['bg'])],
               foreground=[('disabled', c['disabled_fg'])],
@@ -308,7 +419,7 @@ def _apply_base_styles(style: ttk.Style, c: dict):
               bordercolor=[('active', c['border_strong'])],
               )
     style.configure('TRadiobutton', background=c['bg'], foreground=c['fg'],
-                    focuscolor=c['accent'], font=FONT['body'], padding=(2, 3))
+                    focuscolor=c['accent'], font=get_font('body'), padding=(2, 3))
     style.map('TRadiobutton',
               background=[('active', c['bg'])],
               foreground=[('disabled', c['disabled_fg'])],
@@ -327,7 +438,7 @@ def _apply_base_styles(style: ttk.Style, c: dict):
     # Notebook : onglets plats, actif souligné par la couleur de surface
     style.configure('TNotebook', background=c['bg'], borderwidth=0, tabmargins=(0, 0, 0, 0))
     style.configure('TNotebook.Tab', background=c['bg'], foreground=c['fg_muted'],
-                    padding=(16, 8), font=FONT['body'], borderwidth=0)
+                    padding=(16, 8), font=get_font('body'), borderwidth=0)
     style.map('TNotebook.Tab',
               background=[('selected', c['bg']), ('active', c['surface_alt'])],
               foreground=[('selected', c['accent']), ('active', c['fg'])],
@@ -336,7 +447,7 @@ def _apply_base_styles(style: ttk.Style, c: dict):
     # LabelFrame : carte légère
     style.configure('TLabelframe', background=c['bg'], bordercolor=c['border'], relief='flat')
     style.configure('TLabelframe.Label', background=c['bg'], foreground=c['fg_muted'],
-                    font=FONT['small'])
+                    font=get_font('small'))
 
     # Scrollbar fine et discrète
     style.configure('TScrollbar', background=c['surface_alt'], troughcolor=c['bg'],
@@ -350,9 +461,9 @@ def _apply_base_styles(style: ttk.Style, c: dict):
     # Treeview : lignes aérées, sélection accent
     style.configure('Treeview', background=c['surface'], fieldbackground=c['surface'],
                     foreground=c['fg'], rowheight=28, bordercolor=c['border'],
-                    font=FONT['body'])
+                    font=get_font('body'))
     style.configure('Treeview.Heading', background=c['bg'], foreground=c['fg_muted'],
-                    font=FONT['small'], borderwidth=0, padding=(8, 6))
+                    font=get_font('small'), borderwidth=0, padding=(8, 6))
     style.map('Treeview',
               background=[('selected', c['select_bg'])],
               foreground=[('selected', c['select_fg'])],
@@ -367,7 +478,7 @@ def _apply_component_styles(style: ttk.Style, c: dict):
 
     def primary_button(name: str, bg: str, hover: str, fg: str):
         style.configure(name, background=bg, foreground=fg, borderwidth=0,
-                        focalthickness=0, padding=(18, 8), font=FONT['h2'])
+                        focalthickness=0, padding=(18, 8), font=get_font('h2'))
         style.map(name,
                   background=[('active', hover), ('pressed', hover),
                               ('disabled', c['surface_alt'])],
@@ -383,7 +494,7 @@ def _apply_component_styles(style: ttk.Style, c: dict):
     # Action secondaire : surface + bordure fine
     style.configure('AppGhost.TButton', background=c['surface'], foreground=c['fg'],
                     bordercolor=c['border'], borderwidth=1, focalthickness=1,
-                    padding=(12, 6), font=FONT['body'])
+                    padding=(12, 6), font=get_font('body'))
     style.map('AppGhost.TButton',
               background=[('active', c['surface_alt']), ('pressed', c['surface_active']),
                           ('disabled', c['bg'])],
@@ -394,7 +505,7 @@ def _apply_component_styles(style: ttk.Style, c: dict):
 
     # Lien discret
     style.configure('AppLink.TButton', background=c['bg'], foreground=c['accent'],
-                    borderwidth=0, focalthickness=0, padding=(6, 4), font=FONT['small'])
+                    borderwidth=0, focalthickness=0, padding=(6, 4), font=get_font('small'))
     style.map('AppLink.TButton',
               background=[('active', c['bg'])],
               foreground=[('active', c['accent_hover']), ('disabled', c['disabled_fg'])],
@@ -405,7 +516,7 @@ def _apply_component_styles(style: ttk.Style, c: dict):
                     borderwidth=1, relief='flat')
     style.configure('Card.TLabel', background=c['surface'], foreground=c['fg'])
     style.configure('CardMuted.TLabel', background=c['surface'], foreground=c['fg_muted'],
-                    font=FONT['small'])
+                    font=get_font('small'))
     # Variante survolée (élévation discrète)
     style.configure('CardHover.TFrame', background=c['surface_alt'],
                     bordercolor=c['accent'], borderwidth=1, relief='flat')
@@ -422,15 +533,15 @@ def _apply_component_styles(style: ttk.Style, c: dict):
     style.configure('Sidebar.TFrame', background=c['surface'])
     style.configure('Sidebar.TLabel', background=c['surface'], foreground=c['fg'])
     style.configure('SidebarTitle.TLabel', background=c['surface'], foreground=c['fg'],
-                    font=('Segoe UI', 16, 'bold'))
+                    font=get_font('h1'))
     style.configure('SidebarSubtitle.TLabel', background=c['surface'],
-                    foreground=c['fg_muted'], font=FONT['caption'])
+                    foreground=c['fg_muted'], font=get_font('caption'))
     style.configure('SidebarCategory.TLabel', background=c['surface'],
-                    foreground=c['fg_muted'], font=('Segoe UI', 8, 'bold'))
+                    foreground=c['fg_muted'], font=get_font('caption'))
     # Item normal : plat, hover discret
     style.configure('Sidebar.TButton', background=c['surface'], foreground=c['fg'],
                     anchor='w', borderwidth=0, focalthickness=0,
-                    padding=(10, 8), font=FONT['body'])
+                    padding=(10, 8), font=get_font('body'))
     style.map('Sidebar.TButton',
               background=[('active', c['surface_alt']), ('pressed', c['surface_active'])],
               foreground=[('active', c['fg']), ('pressed', c['fg'])],
@@ -438,7 +549,7 @@ def _apply_component_styles(style: ttk.Style, c: dict):
     # Item actif : pastille accent à gauche (frame dédié) + fond teinté
     style.configure('SidebarActive.TButton', background=c['accent_soft'],
                     foreground=c['accent'], anchor='w', borderwidth=0,
-                    focalthickness=0, padding=(10, 8), font=FONT['h2'])
+                    focalthickness=0, padding=(10, 8), font=get_font('h2'))
     style.map('SidebarActive.TButton',
               background=[('active', c['accent_soft'])],
               foreground=[('active', c['accent'])],
