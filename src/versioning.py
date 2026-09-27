@@ -38,8 +38,8 @@ class VersionManager:
                 mapping = {}
         return mapping
 
-    def save_mapping(self):
-        # Sauvegarde atomique via fichier temporaire
+    def _save_mapping_locked(self):
+        """Appelée uniquement lorsqu'on détient déjà le verrou."""
         try:
             tmp_file = self.version_file.with_suffix(".tmp")
             with open(tmp_file, "w", encoding="utf-8") as f:
@@ -48,6 +48,10 @@ class VersionManager:
             tmp_file.replace(self.version_file)
         except (IOError, OSError) as e:
             logger.error("Erreur lors de la sauvegarde du fichier de versions : %s", e)
+
+    def save_mapping(self):
+        with self._lock:
+            self._save_mapping_locked()
 
     def get_next_version(self, folder_name, output_dir="."):
         with self._lock:
@@ -63,23 +67,6 @@ class VersionManager:
         with self._lock:
             self.mapping[folder_name] = version
             # Sauvegarde immédiate avant de libérer le verrou
-            self._save_mapping_locked()   # méthode interne sans verrou
-
-    def _save_mapping_locked(self):
-        """Appelée uniquement lorsqu'on détient déjà le verrou."""
-        try:
-            tmp_file = self.version_file.with_suffix(".tmp")
-            with open(tmp_file, "w", encoding="utf-8") as f:
-                for folder, ver in sorted(self.mapping.items()):
-                    f.write(f"{folder}:{ver}\n")
-            tmp_file.replace(self.version_file)
-        except (IOError, OSError) as e:
-            logger.error("Erreur lors de la sauvegarde du fichier de versions : %s", e)
-
-    # On garde save_mapping pour d'autres usages éventuels, mais on le réécrit
-    # pour qu'il utilise le verrou (appel externe)
-    def save_mapping(self):
-        with self._lock:
             self._save_mapping_locked()
 
     def reset(self):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 from src.versioning import VersionManager
 
@@ -78,3 +79,24 @@ class TestVersionManager:
         version_file.write_text("not:valid:corrupted\n", encoding='utf-8')
         vm = VersionManager(str(version_file))
         assert vm.mapping == {}
+
+    def test_save_mapping_acquires_lock(self, tmp_path):
+        """Vérifie que save_mapping acquiert bien le verrou."""
+        vm = VersionManager(str(tmp_path / "versions.txt"))
+        vm.use_version("project", 1)
+        
+        # Mock le lock entier pour vérifier qu'il est utilisé
+        original_lock = vm._lock
+        mock_lock = MagicMock()
+        mock_lock.__enter__ = MagicMock(return_value=None)
+        mock_lock.__exit__ = MagicMock(return_value=False)
+        vm._lock = mock_lock
+        
+        vm.save_mapping()
+        
+        # Vérifier que le lock a été utilisé comme context manager
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
+        
+        # Restaurer
+        vm._lock = original_lock
