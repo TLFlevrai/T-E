@@ -211,6 +211,73 @@ class TestTransferIntegration:
         assert _wait_for(lambda: any(t == 'rejected' and d.get('reason') == 'file_too_large'
                                      for t, d in server_env['events']))
 
+    def test_hash_received_in_single_large_chunk(self, server_env):
+        """BUG #9: hash reçu en un seul gros chunk (data + hash ensemble).
+
+        Le client peut envoyer data + hash en un seul sendall() si le socket
+        n'est pas flushé. Le serveur doit lire exactement 32 octets de hash.
+        """
+        payload = b'contenu de test' * 100
+        import hashlib
+        digest = hashlib.sha256(payload).digest()
+        combined = payload + digest
+        
+        import socket
+        from tests.unit.test_network_server import _hmac_for
+        
+        try:
+            with socket.create_connection((server_env['server'].host, server_env['server'].port), timeout=5) as s:
+                auth = _hmac_for(server_env['token'])
+                name_bytes = b'hash_test.md'
+                s.sendall(len(auth).to_bytes(2, 'big'))
+                s.sendall(auth)
+                s.sendall(len(name_bytes).to_bytes(4, 'big'))
+                s.sendall(name_bytes)
+                s.sendall(len(payload).to_bytes(8, 'big'))  # taille déclarée = data SEULEMENT
+                s.sendall(combined)  # data + hash EN UN SEUL ENVOI
+        except ConnectionResetError:
+            pass
+        
+        assert _wait_for(lambda: any(t == 'file_received' for t, _ in server_env['events']), timeout=5)
+        # Vérifier que le fichier a bien été reçu
+        files = list(server_env['received_dir'].glob('*hash_test.md'))
+        assert len(files) == 1
+        assert files[0].read_bytes() == payload
+
+    def test_hash_received_in_multiple_chunks(self, server_env):
+        """Vérifie la réception du hash sur plusieurs chunks TCP (fragmentation)."""
+        payload = b'contenu de test' * 50
+        import hashlib
+        digest = hashlib.sha256(payload).digest()
+        
+        import socket
+        from tests.unit.test_network_server import _hmac_for
+        
+        # Envoyer en plusieurs send() pour forcer la fragmentation
+        try:
+            with socket.create_connection((server_env['server'].host, server_env['server'].port), timeout=5) as s:
+                auth = _hmac_for(server_env['token'])
+                name_bytes = b'hash_multi.md'
+                s.sendall(len(auth).to_bytes(2, 'big'))
+                s.sendall(auth)
+                s.sendall(len(name_bytes).to_bytes(4, 'big'))
+                s.sendall(name_bytes)
+                s.sendall(len(payload).to_bytes(8, 'big'))
+                # Envoyer payload en 3 fragments
+                s.send(payload[:2000])
+                s.send(payload[2000:4000])
+                s.send(payload[4000:])
+                # Envoyer hash en 2 fragments
+                s.send(digest[:16])
+                s.send(digest[16:])
+        except ConnectionResetError:
+            pass
+        
+        assert _wait_for(lambda: any(t == 'file_received' for t, _ in server_env['events']), timeout=5)
+        files = list(server_env['received_dir'].glob('*hash_multi.md'))
+        assert len(files) == 1
+        assert files[0].read_bytes() == payload
+
 
 class TestFailClosedOnDefaultToken:
     def test_refuses_non_loopback_with_default_token(self, tmp_path, monkeypatch):

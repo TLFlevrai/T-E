@@ -342,7 +342,9 @@ class ReceiveServer(threading.Thread):
         # 4. Réception en streaming vers un fichier temporaire (hash incrémental).
         # Évite de bufferiser jusqu'à 100 Mo par connexion en mémoire.
         hasher = sha256()
-        received_hash = b''
+        # Buffer borné pour le hash reçu (exactement 32 octets SHA-256)
+        received_hash_buf = bytearray(32)
+        hash_bytes_read = 0
         bytes_received = 0
         tmp_path = None
         try:
@@ -364,18 +366,27 @@ class ReceiveServer(threading.Thread):
                         hash_part = chunk[len(chunk) - overflow:]
                         hasher.update(file_part)
                         tmp_file.write(file_part)
-                        received_hash += hash_part
+                        # Remplir le buffer de hash (max 32 octets)
+                        take = min(len(hash_part), 32 - hash_bytes_read)
+                        if take > 0:
+                            received_hash_buf[hash_bytes_read:hash_bytes_read + take] = hash_part[:take]
+                            hash_bytes_read += take
+                        # Si on reçoit plus de 32 octets de hash, on ignore le surplus (avec warning)
+                        elif len(hash_part) > take:
+                            logger.warning("Hash reçu dépasse 32 octets, surplus ignoré pour %s de %s", filename, addr)
                     bytes_received += len(chunk)
         except Exception:
             if tmp_path is not None:
                 _silent_unlink(tmp_path)
             raise
 
-        if bytes_received != data_size + 32 or len(received_hash) != 32:
+        if bytes_received != data_size + 32 or hash_bytes_read != 32:
             logger.error("Taille reçue incorrecte pour %s de %s", filename, addr)
             _silent_unlink(tmp_path)
             self._notify('rejected', {'reason': 'incomplete', 'filename': filename, 'addr': addr})
             return
+
+        received_hash = bytes(received_hash_buf)
 
         # 5. Vérification hash
         computed_hash = hasher.digest()
