@@ -127,6 +127,7 @@ class FileTransferService:
         # Collecter les chunks du fichier pour le hash
         hasher = sha256()
         file_chunks = []
+        sent_bytes = 0
         with open(file_path, 'rb') as f:
             while True:
                 chunk = f.read(self.CHUNK_SIZE)
@@ -134,8 +135,9 @@ class FileTransferService:
                     break
                 file_chunks.append(chunk)
                 hasher.update(chunk)
+                sent_bytes += len(chunk)
                 if progress_callback:
-                    progress_callback(hasher.digest().__sizeof__(), total_size)  # approximation
+                    progress_callback(sent_bytes, total_size)
 
         # Construire le payload v0
         parts = []
