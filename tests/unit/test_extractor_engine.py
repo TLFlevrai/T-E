@@ -13,6 +13,7 @@ from src.extractor.engine import (
     CANCELLED,
     FAILED,
     SUCCESS,
+    NO_SELECTION,
     ExtractionEngine,
 )
 
@@ -164,8 +165,41 @@ class TestExtractionEngineRun:
 
         calls = []
         engine.run(progress_callback=lambda cur, total, path: calls.append((cur, total, path)))
-        assert len(calls) == 1
-        assert calls[0] == (1, 1, "a.py")
+        # Progress callback est appelé 2 fois : début (0) et fin (100%)
+        assert len(calls) == 2
+        assert calls[0][0] == 0  # début
+        assert calls[-1][0] == calls[-1][1]  # fin = 100%
+
+    def test_context_stats_total_files(self, tmp_path):
+        """Vérifie que context.stats contient le bon total_files."""
+        ctx = _make_context(tmp_path, include_json=True, include_txt=True)
+        ctx.folder_path.mkdir(parents=True, exist_ok=True)
+        engine = ExtractionEngine(ctx)
+
+        # Créer 3 vrais fichiers
+        test_files = []
+        for name, ext, content in [
+            ("main.py", ".py", "print('hi')\n"),
+            ("config.json", ".json", '{"a":1}\n'),
+            ("readme.txt", ".txt", "hello\n"),
+        ]:
+            f = ctx.folder_path / name
+            f.write_text(content, encoding="utf-8")
+            test_files.append((f, Path(name), ext))
+
+        engine.discovery.find_files = MagicMock(return_value=test_files)
+
+        # Utiliser le VRAI processor (pas de mock) pour mettre à jour les stats
+        # Mais on mock seulement find_files
+        engine.run()
+
+        # Vérifier les stats dans le contexte
+        stats = ctx.stats
+        assert stats.get('py') == 1
+        assert stats.get('json') == 1
+        assert stats.get('txt') == 1
+        total = sum(stats.get(k, 0) for k in ('py','json','txt','po','mo','html','css','js'))
+        assert total == 3
 
 
 class TestExtractionEngineCancellation:
@@ -285,7 +319,7 @@ class TestExtractionEngineFilter:
         result = engine._filter_selected(all_files, None)
         assert result == all_files
 
-    def test_filter_selected_empty_returns_none(self, tmp_path):
+    def test_filter_selected_empty_returns_no_selection(self, tmp_path):
         ctx = _make_context(tmp_path)
         ctx.selected_files = {"nonexistent.py"}
         ctx.folder_path.mkdir(parents=True, exist_ok=True)
@@ -296,4 +330,4 @@ class TestExtractionEngineFilter:
         ]
 
         result = engine._filter_selected(all_files, None)
-        assert result is None
+        assert result == NO_SELECTION

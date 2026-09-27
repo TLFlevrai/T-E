@@ -54,8 +54,6 @@ class ExtractionEngine:
         files = self._filter_selected(all_files, log_callback)
         if files is NO_SELECTION:
             return NO_SELECTION
-        if files is None:
-            return FAILED
 
         total_files = len(files)
         output_path.parent.mkdir(parents=True, exist_ok=True)
