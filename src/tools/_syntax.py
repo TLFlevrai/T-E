@@ -155,7 +155,7 @@ def _build_python_patterns() -> list[tuple[str, str]]:
         ('keyword',   r'\b(?:' + '|'.join(_PYTHON_KEYWORDS) + r')\b'),
         ('function',  r'\b\w+(?=\()'),
         ('operator',  r'=|!=|<=|>=|<>|<<|>>|\*\*|[+\-*/%&|^~<>]'),
-        ('bracket',   r'[()[\]{}]]'),
+        ('bracket',   r'[()\[\]{}]'),
     ]
 
 
@@ -169,7 +169,7 @@ def _build_js_patterns() -> list[tuple[str, str]]:
         ('keyword',   r'\b(?:' + '|'.join(_JS_KEYWORDS) + r')\b'),
         ('function',  r'\b\w+(?=\()'),
         ('operator',  r'=|!=|===|!==|<=|>=|=>|&&|\|\||[+\-*/%&|^~<>!?]'),
-        ('bracket',   r'[()[\]{}]]'),
+        ('bracket',   r'[()\[\]{}]'),
     ]
 
 
@@ -179,7 +179,7 @@ def _build_json_patterns() -> list[tuple[str, str]]:
         ('string',    r'"(?:[^"\\]|\\.)*"'),
         ('constant',  r'\b(?:' + '|'.join(_JSON_CONSTANTS) + r')\b'),
         ('number',    r'-?\b\d+\.?\d*(?:e[+-]?\d+)?\b'),
-        ('bracket',   r'[()[\]{}]]'),
+        ('bracket',   r'[()\[\]{}]'),
         ('operator',  r'[,:;]'),
     ]
 
