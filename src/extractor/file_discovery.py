@@ -5,6 +5,14 @@ from pathlib import Path
 from typing import List, Tuple, Set, Iterator, Optional
 from src.config import ExtractionOptions
 from src.logger import setup_logger
+from src.extractor._filters import (
+    DEFAULT_IGNORED_PATTERNS,
+    EXCLUDED_FILE_SUFFIXES,
+    EXCLUDED_FILE_NAMES,
+    should_ignore_dir,
+    should_ignore_file,
+    prune_dirs,
+)
 
 logger = setup_logger(__name__)
 
@@ -12,17 +20,21 @@ logger = setup_logger(__name__)
 class FileDiscoveryService:
     """
     Service unique de découverte de fichiers avec élagage (pruning) au niveau FS.
-    Ne descend JAMAIS dans .git, __pycache__ ni autres dossiers ignorés.
+    Ne descend JAMAIS dans les dossiers techniques/cachés configurés.
     """
 
     def __init__(self, options: ExtractionOptions):
         self.options = options
-        # Noms de dossiers à ignorer complètement (pruning)
-        self._ignored_dir_names: Set[str] = set()
+        # Construire la liste des patterns d'exclusion en fusionnant :
+        # - les patterns venant de options.ignore_patterns (nouveau)
+        # - les exclusions legacy (ignore_git, ignore_pycache) pour rétro-compatibilité
+        self._ignored_patterns: list[str] = list(options.ignore_patterns)
         if options.ignore_git:
-            self._ignored_dir_names.add('.git')
+            if ".git" not in self._ignored_patterns:
+                self._ignored_patterns.append(".git")
         if options.ignore_pycache:
-            self._ignored_dir_names.add('__pycache__')
+            if "__pycache__" not in self._ignored_patterns:
+                self._ignored_patterns.append("__pycache__")
         # Extensions autorisées (calculées une fois)
         self._allowed_extensions: List[str] = self._build_extension_list()
 
@@ -78,19 +90,46 @@ class FileDiscoveryService:
     def _walk(self, folder_path: Path, collect_dirs: bool = False,
               all_files: bool = False) -> Iterator[_WalkItem]:
         """
-        Générateur unique de parcours avec pruning.
-        
+        Générateur unique de parcours avec pruning, protection cycles et limite de profondeur.
+
         Args:
             folder_path: Racine du parcours (déjà résolue)
             collect_dirs: Si True, émet aussi les dossiers découverts
             all_files: Si True, ne filtre pas par extension (structure complète)
-            
+                       mais filtre TOUJOURS les fichiers techniques/système
+                       sauf si force_include_all=True
+
         Yields:
             _WalkItem pour chaque fichier (et dossier si collect_dirs)
         """
-        for root, dirs, filenames in os.walk(folder_path, topdown=True):
+        max_depth = self.options.max_depth if self.options.max_depth and self.options.max_depth > 0 else None
+        force_include_all = getattr(self.options, 'force_include_all', False)
+        visited: set[Path] = set()
+        yielded_dirs: set[Path] = set()  # Pour dédupliquer les dossiers yieldés
+
+        for root, dirs, filenames in os.walk(folder_path, topdown=True, followlinks=False):
+            root_path = Path(root)
+            resolved_root = root_path.resolve()
+
+            # Protection anti-cycles : si on a déjà visité ce chemin résolu
+            if resolved_root in visited:
+                dirs[:] = []
+                continue
+            visited.add(resolved_root)
+
+            # Calculer la profondeur relative
+            if max_depth is not None:
+                try:
+                    rel = root_path.relative_to(folder_path)
+                    depth = len(rel.parts)
+                except ValueError:
+                    depth = 0
+                if depth >= max_depth:
+                    dirs[:] = []
+                    continue
+
             # --- PRUNING : supprime les dossiers ignorés AVANT la descente ---
-            dirs[:] = [d for d in dirs if d not in self._ignored_dir_names]
+            prune_dirs(dirs, self._ignored_patterns)
 
             # Si include_subdirs=False, on vide dirs pour ne pas descendre
             if not self.options.include_subdirs and root != str(folder_path):
@@ -103,13 +142,18 @@ class FileDiscoveryService:
             # Collecter les dossiers (pour l'affichage structure)
             if collect_dirs:
                 for d in dirs:
-                    if rel_root_str:
-                        yield self._WalkItem('dir', rel_path=Path(rel_root_str) / d)
-                    else:
-                        yield self._WalkItem('dir', rel_path=Path(d))
+                    dir_rel = Path(rel_root_str) / d if rel_root_str else Path(d)
+                    if dir_rel not in yielded_dirs:
+                        yielded_dirs.add(dir_rel)
+                        yield self._WalkItem('dir', rel_path=dir_rel)
 
             # Collecter les fichiers
             for fname in filenames:
+                # Filtrage des fichiers techniques/système : s'applique TOUJOURS
+                # sauf si force_include_all=True (debug uniquement)
+                if should_ignore_file(fname, self._ignored_patterns, force_include_all):
+                    continue
+
                 # Filtre d'extension : uniquement si on ne veut PAS tout inclure
                 if not all_files and not self._is_extractable_file(fname):
                     continue
@@ -127,7 +171,8 @@ class FileDiscoveryService:
                 # Parents du fichier pour l'arbre (si collect_dirs)
                 if collect_dirs:
                     for parent in rel_path.parents:
-                        if parent != Path('.'):
+                        if parent != Path('.') and parent not in yielded_dirs:
+                            yielded_dirs.add(parent)
                             yield self._WalkItem('dir', rel_path=parent)
 
                 # FIX BUG #3 : calculer la taille une seule fois au parcours

@@ -331,3 +331,36 @@ class TestExtractionEngineFilter:
 
         result = engine._filter_selected(all_files, None)
         assert result == NO_SELECTION
+
+
+class TestExtractionEngineWalk:
+    """Tests du parcours de fichiers."""
+
+    def test_walk_deduplicates_directories(self, tmp_path):
+        """BUG #4: _walk ne doit pas yield les mêmes dossiers plusieurs fois."""
+        from src.extractor.file_discovery import FileDiscoveryService
+        from src.config import ExtractionOptions
+        
+        # Créer une structure: a/b/c/file.py
+        base = tmp_path / "src_folder"
+        (base / "a" / "b" / "c").mkdir(parents=True)
+        (base / "a" / "b" / "c" / "file.py").write_text("x=1\n", encoding="utf-8")
+        (base / "a" / "b" / "other.py").write_text("y=2\n", encoding="utf-8")
+        
+        opts = ExtractionOptions()
+        discovery = FileDiscoveryService(opts)
+        walk_items = list(discovery._walk(base, collect_dirs=True, all_files=False))
+        
+        dir_items = [item for item in walk_items if item.kind == 'dir']
+        dir_paths = [str(item.rel_path) for item in dir_items]
+        
+        # Chaque dossier ne doit apparaître qu'une seule fois
+        from collections import Counter
+        counts = Counter(dir_paths)
+        for path, count in counts.items():
+            assert count == 1, f"Dossier {path} yieldé {count} fois (attendu: 1)"
+        
+        # Vérifier les dossiers attendus
+        expected = {"a", str(Path("a") / "b"), str(Path("a") / "b" / "c")}
+        actual = set(dir_paths)
+        assert actual == expected, f"Expected {expected}, got {actual}"
