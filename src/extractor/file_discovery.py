@@ -16,6 +16,15 @@ from src.extractor._filters import (
 
 logger = setup_logger(__name__)
 
+# DEBUG: Compteurs pour diagnostic (activés via TE_DEBUG_COUNTERS=1)
+_DEBUG_ENABLED = os.environ.get('TE_DEBUG_COUNTERS') == '1'
+_DEBUG_COUNTERS: dict[str, int] = {
+    "walk_items_yielded": 0,
+    "walk_roots_visited": 0,
+    "files_emitted": 0,
+    "bytes_written": 0,
+}
+
 
 class FileDiscoveryService:
     """
@@ -111,6 +120,10 @@ class FileDiscoveryService:
             root_path = Path(root)
             resolved_root = root_path.resolve()
 
+            # DEBUG: compteurs
+            if _DEBUG_ENABLED:
+                _DEBUG_COUNTERS["walk_roots_visited"] += 1
+
             # Protection anti-cycles : si on a déjà visité ce chemin résolu
             if resolved_root in visited:
                 dirs[:] = []
@@ -145,6 +158,8 @@ class FileDiscoveryService:
                     dir_rel = Path(rel_root_str) / d if rel_root_str else Path(d)
                     if dir_rel not in yielded_dirs:
                         yielded_dirs.add(dir_rel)
+                        if _DEBUG_ENABLED:
+                            _DEBUG_COUNTERS["walk_items_yielded"] += 1
                         yield self._WalkItem('dir', rel_path=dir_rel)
 
             # Collecter les fichiers
@@ -173,6 +188,8 @@ class FileDiscoveryService:
                     for parent in rel_path.parents:
                         if parent != Path('.') and parent not in yielded_dirs:
                             yielded_dirs.add(parent)
+                            if _DEBUG_ENABLED:
+                                _DEBUG_COUNTERS["walk_items_yielded"] += 1
                             yield self._WalkItem('dir', rel_path=parent)
 
                 # FIX BUG #3 : calculer la taille une seule fois au parcours
@@ -181,6 +198,9 @@ class FileDiscoveryService:
                     file_size = full_path.stat().st_size
                 except OSError:
                     pass
+                if _DEBUG_ENABLED:
+                    _DEBUG_COUNTERS["walk_items_yielded"] += 1
+                    _DEBUG_COUNTERS["files_emitted"] += 1
                 yield self._WalkItem('file', full_path=full_path, rel_path=rel_path, extension=full_path.suffix, size=file_size)
 
     def _is_extractable_file(self, filename: str) -> bool:

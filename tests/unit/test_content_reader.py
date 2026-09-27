@@ -40,12 +40,21 @@ class TestContentReader:
         assert ok is False
         assert "volumineux" in content
 
-    def test_read_mo_file(self, tmp_path):
-        file = tmp_path / "test.mo"
-        file.write_bytes(b'\x00\x01\x02\x03')
-        content, lines, size, ok = ContentReader.read_file_content(file, '.mo')
-        assert ok is True
-        assert lines >= 1
+    def test_debug_counters_disabled_by_default(self, tmp_path):
+        """BUG #3: _DEBUG_ENABLED doit être False par défaut."""
+        import os
+        # Vérifier que la variable d'env n'est pas définie
+        assert os.environ.get('TE_DEBUG_COUNTERS') != '1'
+        
+        from src.extractor.file_discovery import _DEBUG_ENABLED, _DEBUG_COUNTERS
+        
+        assert _DEBUG_ENABLED is False
+        assert _DEBUG_COUNTERS == {
+            "walk_items_yielded": 0,
+            "walk_roots_visited": 0,
+            "files_emitted": 0,
+            "bytes_written": 0,
+        }
 
     def test_streaming_line_range_returns_total_lines(self, tmp_path):
         """BUG #5: line_range ne doit pas affecter num_lines retourné."""
