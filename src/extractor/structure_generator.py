@@ -67,9 +67,10 @@ def generate_project_structure(folder: str, options: ExtractionOptions, context=
     }
 
     # Construire l'arbre complet (dossiers + fichiers) trié
-    # Structure: {parent_path: {dirs: [names], files: [(name, ext, size_str)]}}
+    # Structure: {parent_path: {dirs: set(names), files: [(name, ext, size_str)]}}
+    # Utilise set pour dirs pour dédupliquer (le walk émet les mêmes dossiers plusieurs fois)
     from collections import defaultdict
-    tree = defaultdict(lambda: {'dirs': [], 'files': []})
+    tree = defaultdict(lambda: {'dirs': set(), 'files': []})
 
     # Parcourir les items du walk pour remplir l'arbre
     for item in walk_items:
@@ -78,7 +79,7 @@ def generate_project_structure(folder: str, options: ExtractionOptions, context=
             parent_str = str(parent)
             if parent_str == '.':
                 parent_str = ''
-            tree[parent_str]['dirs'].append(item.rel_path.name)
+            tree[parent_str]['dirs'].add(item.rel_path.name)
         elif item.kind == 'file':
             parent = str(item.rel_path.parent)
             if parent == '.':
@@ -90,9 +91,9 @@ def generate_project_structure(folder: str, options: ExtractionOptions, context=
                 size_str = "?"
             tree[parent]['files'].append((item.rel_path.name, item.extension, size_str))
 
-    # Trier les entrées
+    # Trier les entrées (convertir set->list trié)
     for parent in tree:
-        tree[parent]['dirs'].sort()
+        tree[parent]['dirs'] = sorted(tree[parent]['dirs'])
         tree[parent]['files'].sort(key=lambda x: x[0])
 
     # Parcours récursif pour affichage

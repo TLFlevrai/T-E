@@ -23,7 +23,14 @@ class NetworkConfig(BaseModel):
 
 
 class ExtractionOptions(BaseModel):
-    """Options de l'extraction."""
+    """Options de l'extraction.
+
+    Politique d'exclusion : par défaut, l'extraction ignore les dossiers
+    techniques et cachés courants (.git, .pytest_cache, __pycache__,
+    node_modules, .venv, etc.) ainsi que les fichiers temporaires
+    (.pyc, .log, CACHEDIR.TAG, etc.). Cette politique peut être
+    personnalisée via `ignore_patterns` et `max_depth`.
+    """
     include_json: bool = Field(default=True, description="Inclure les fichiers .json")
     include_subdirs: bool = Field(default=True, description="Parcourir les sous-dossiers")
     show_file_paths: bool = Field(default=True, description="Afficher les chemins complets des fichiers")
@@ -35,7 +42,7 @@ class ExtractionOptions(BaseModel):
     include_css: bool = Field(default=True, description="Inclure les fichiers .css")
     include_js: bool = Field(default=True, description="Inclure les fichiers .js")
     ignore_init: bool = Field(default=False, description="Ignorer les fichiers __init__.py")
-    ignore_git: bool = Field(default=False, description="Ignorer le dossier .git et son contenu")
+    ignore_git: bool = Field(default=True, description="Ignorer le dossier .git et son contenu")
     ignore_pycache: bool = Field(default=True, description="Ignorer les dossiers __pycache__ et leur contenu")
     include_statistics: bool = Field(default=True, description="Inclure les statistiques dans l'export")
     include_file_metadata: bool = Field(default=False, description="Inclure les métadonnées par fichier (taille, lignes)")
@@ -43,6 +50,22 @@ class ExtractionOptions(BaseModel):
     max_file_size_mb: int = Field(default=10, ge=1, le=1000, description="Taille max par fichier (Mo)")
     max_total_size_mb: Optional[int] = Field(default=None, ge=1, description="Taille totale max de l'export (Mo)")
     line_range: Optional[Tuple[int, int]] = Field(default=None, description="Plage de lignes à extraire (début, fin) par fichier")
+    ignore_patterns: list[str] = Field(
+        default_factory=lambda: [
+            ".git", ".hg", ".svn",
+            ".pytest_cache", ".mypy_cache", ".ruff_cache", ".cache",
+            "__pycache__",
+            ".venv", "venv", "env",
+            "node_modules",
+            ".idea", ".vscode",
+            "dist", "build", ".eggs",
+            ".coverage", ".tox",
+            "*.egg-info",
+        ],
+        description="Patterns de dossiers à ignorer (glob). Par défaut : dossiers techniques et VCS."
+    )
+    max_depth: int = Field(default=25, ge=0, description="Profondeur max de parcours (0 = illimité)")
+    force_include_all: bool = Field(default=False, description="Si True, ignore les filtres de fichiers (debug uniquement)")
 
 
 class GuiConfig(BaseModel):

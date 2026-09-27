@@ -3,7 +3,7 @@
   "received_subdir": "received",
   "archive_subdir": "old_out",
   "version_file": "extractor_version.txt",
-  "language": "en",
+  "language": "fr",
   "network": {
     "server_host": "127.0.0.1",
     "server_port": 50000,
@@ -11,7 +11,7 @@
     "broadcast_msg": "PYEXTRACTOR_DISCOVER",
     "reply_msg": "PYEXTRACTOR_HERE",
     "auth_enabled": true,
-    "auth_token": "change-me-secure-random-token",
+    "auth_token": "ad25a2d011c75774d50329200bbf6ab095ef91c610aae65373d0c748add80b1e",
     "allowed_extensions": [
       ".txt"
     ]
@@ -28,16 +28,44 @@
     "include_css": true,
     "include_js": true,
     "ignore_init": false,
-    "ignore_git": false,
+    "ignore_git": true,
     "ignore_pycache": true,
     "include_statistics": true,
-    "include_file_metadata": false
+    "include_file_metadata": false,
+    "detect_binary": true,
+    "max_file_size_mb": 10,
+    "max_total_size_mb": null,
+    "line_range": null,
+    "ignore_patterns": [
+      ".git",
+      ".hg",
+      ".svn",
+      ".pytest_cache",
+      ".mypy_cache",
+      ".ruff_cache",
+      ".cache",
+      "__pycache__",
+      ".venv",
+      "venv",
+      "env",
+      "node_modules",
+      ".idea",
+      ".vscode",
+      "dist",
+      "build",
+      ".eggs",
+      ".coverage",
+      ".tox",
+      "*.egg-info"
+    ],
+    "max_depth": 25,
+    "force_include_all": false
   },
   "gui": {
-    "window_width": 1177,
-    "window_height": 612,
-    "window_x": 571,
-    "window_y": 231,
+    "window_width": 1100,
+    "window_height": 750,
+    "window_x": -1,
+    "window_y": -1,
     "version_window_width": 1000,
     "version_window_height": 650,
     "version_window_x": -1,
@@ -48,6 +76,6 @@
     "custom_theme": {},
     "shortcuts": {},
     "youtube_dir": "downloads",
-    "last_folder": "C:/Dossier tlf/code/TLLM"
+    "last_folder": ""
   }
 }

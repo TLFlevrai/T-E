@@ -1,5 +1,6 @@
 # src/services/version_service.py
 from __future__ import annotations
+import os
 import re
 import shutil
 from dataclasses import dataclass
@@ -9,6 +10,11 @@ from typing import Dict, List, Optional, Tuple
 from src.config import get_config
 from src.logger import setup_logger
 from src.versioning import VersionManager
+from src.extractor._filters import (
+    DEFAULT_IGNORED_PATTERNS,
+    should_ignore_file,
+    prune_dirs,
+)
 
 logger = setup_logger(__name__)
 
@@ -46,6 +52,15 @@ class VersionArchiveService:
             cfg.get('version_file', 'extractor_version.txt')
         )
 
+    def _iter_safe_txt_files(self, root: Path):
+        """Itère sur les fichiers .txt en excluant les dossiers techniques."""
+        ignored = DEFAULT_IGNORED_PATTERNS
+        for root_dir, dirs, filenames in os.walk(root, topdown=True, followlinks=False):
+            prune_dirs(dirs, ignored)
+            for fname in filenames:
+                if fname.endswith(".txt") and not should_ignore_file(fname, ignored):
+                    yield Path(root_dir) / fname
+
     def scan_projects(self) -> Dict[str, List[VersionEntry]]:
         """
         Scanne les répertoires de sortie et d'archive pour construire
@@ -54,13 +69,11 @@ class VersionArchiveService:
         """
         projects: Dict[str, List[VersionEntry]] = {}
 
-        # Parcours récursif des deux dossiers
+        # Parcours récursif des deux dossiers (filtré)
         for root_dir in [self.output_dir, self.archive_dir]:
             if not root_dir.exists():
                 continue
-            for file_path in root_dir.rglob('*.txt'):
-                # Ignorer les fichiers dans des sous-dossiers d'archive ?
-                # On veut tous les fichiers .txt
+            for file_path in self._iter_safe_txt_files(root_dir):
                 match = VERSION_FILE_PATTERN.match(file_path.name)
                 if not match:
                     continue

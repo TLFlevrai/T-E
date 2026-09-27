@@ -35,7 +35,7 @@ class TestConfigSchema:
         assert opts.include_json is True
         assert opts.include_subdirs is True
         assert opts.ignore_pycache is True
-        assert opts.ignore_git is False  # Default is False per schema
+        assert opts.ignore_git is True  # Default changed to True for safety
     
     def test_extraction_options_custom(self):
         opts = ExtractionOptions(include_json=False, ignore_git=False)
