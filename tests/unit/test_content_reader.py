@@ -56,6 +56,33 @@ class TestContentReader:
             "bytes_written": 0,
         }
 
+    def test_resolve_output_dir_consistency(self, tmp_path, monkeypatch):
+        """BUG #7: PDFService et Application utilisent la même résolution output_dir."""
+        # Configurer un output_dir relatif
+        config_path = tmp_path / 'config.json'
+        config_path.write_text('{"output_dir": "custom_out"}', encoding='utf-8')
+        monkeypatch.setattr('src.config.CONFIG_PATH', config_path)
+        from src.config import _Config
+        _Config._reset_for_testing()
+        
+        try:
+            from src.paths import resolve_output_dir
+            import src.paths as paths_module
+            from src.core.app import Application
+            
+            # Test resolve_output_dir
+            resolved = resolve_output_dir()
+            # Utiliser la MÊME logique que resolve_output_dir (basée sur paths.py)
+            project_root = Path(paths_module.__file__).parent.parent.parent
+            expected = project_root / 'custom_out'
+            assert resolved == expected
+            
+            # Test Application._resolve_output_dir utilise la même fonction
+            app_resolved = Application._resolve_output_dir(Application)
+            assert app_resolved == resolved
+        finally:
+            _Config._reset_for_testing()
+
     def test_streaming_line_range_returns_total_lines(self, tmp_path):
         """BUG #5: line_range ne doit pas affecter num_lines retourné."""
         # Créer un fichier > 1 Mo pour forcer le streaming (seuil = 1 Mo)

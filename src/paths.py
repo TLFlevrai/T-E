@@ -110,3 +110,26 @@ migrate_one_legacy_file = _migrate_one_legacy_file
 def get_legacy_fallback_path(filename: str) -> Path:
     """Retourne le chemin legacy (racine projet) en fallback."""
     return Path(__file__).parent.parent.parent / filename
+
+
+def resolve_output_dir() -> Path:
+    """
+    Résout le dossier de sortie configuré.
+    
+    Si le chemin dans la config est absolu, l'utilise tel quel.
+    Sinon, le résout relativement à la racine du projet (_PROJECT_ROOT).
+    
+    Returns:
+        Path absolu du dossier de sortie
+    """
+    from src.config import get_config
+    
+    # Racine du projet (répertoire parent de src/)
+    project_root = Path(__file__).parent.parent.parent
+    
+    output_dir_str = get_config().get('output_dir', 'out')
+    output_path = Path(output_dir_str)
+    
+    if output_path.is_absolute():
+        return output_path
+    return project_root / output_path

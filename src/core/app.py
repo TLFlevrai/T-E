@@ -15,7 +15,7 @@ from src.i18n import setup_i18n
 from src.logger import setup_logger
 from src.network.discovery import DiscoveryService
 from src.network.server import ReceiveServer
-from src.paths import PathProvider
+from src.paths import PathProvider, resolve_output_dir
 from src.services.extraction_service import ExtractionService
 from src.versioning import VersionManager
 
@@ -119,11 +119,7 @@ class Application:
 
     def _resolve_output_dir(self) -> Path:
         """Résout le dossier de sortie : relatif à la racine du projet si relatif, absolu sinon."""
-        output_dir_str = get_config().get('output_dir', 'out')
-        output_path = Path(output_dir_str)
-        if output_path.is_absolute():
-            return output_path
-        return _PROJECT_ROOT / output_path
+        return resolve_output_dir()
 
     def _start_network_services(self) -> None:
         """Démarre les services réseau avec configuration centralisée."""
