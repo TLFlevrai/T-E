@@ -631,6 +631,15 @@ class CalculatorContent(ttk.Frame):
             self.expression += token
         self._refresh_display()
 
+    def _recompute_paren_depth(self):
+        """Recalcule _paren_depth depuis l'expression complète."""
+        self._paren_depth = 0
+        for ch in self.expression:
+            if ch == '(':
+                self._paren_depth += 1
+            elif ch == ')':
+                self._paren_depth = max(0, self._paren_depth - 1)
+
     def _insert_op(self, op: str):
         if self.expression == "Erreur":
             return
@@ -697,6 +706,7 @@ class CalculatorContent(ttk.Frame):
         elif self.expression.endswith(')'):
             self._paren_depth += 1
         self.expression = self.expression[:-1] if len(self.expression) > 1 else "0"
+        self._recompute_paren_depth()
         self._refresh_display()
 
     def _toggle_sign(self):
@@ -712,6 +722,7 @@ class CalculatorContent(ttk.Frame):
             return
         new_number = number[1:] if number.startswith('-') else '-' + number
         self.expression = self.expression[:i] + new_number
+        self._recompute_paren_depth()
         self._refresh_display()
 
     def _evaluate(self):
@@ -802,6 +813,7 @@ class CalculatorContent(ttk.Frame):
             if text:
                 safe_eval(text.replace(' ', ''))
                 self.expression = text
+                self._recompute_paren_depth()
                 self._refresh_display()
         except Exception:
             logger.debug("Exception in paste expression from clipboard", exc_info=True)
@@ -866,6 +878,7 @@ class CalculatorContent(ttk.Frame):
             return "break"
         if key in '()':
             self._insert_char(key)
+            self._recompute_paren_depth()
             return "break"
         return None
 

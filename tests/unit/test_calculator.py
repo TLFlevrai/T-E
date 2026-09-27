@@ -221,3 +221,43 @@ class TestConstants:
 
     def test_tau(self):
         assert abs(_CONSTANTS['tau'] - 6.28318530) < 0.0001
+
+
+class TestParenDepth:
+    """Tests pour _paren_depth (BUG #11)."""
+
+    def test_recompute_paren_depth_simple(self):
+        from src.gui.calculator import CalculatorContent
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            calc = CalculatorContent(root)
+            calc.expression = "((1+2)*3)"
+            calc._recompute_paren_depth()
+            assert calc._paren_depth == 0
+            calc.expression = "((1+2)*3"
+            calc._recompute_paren_depth()
+            assert calc._paren_depth == 1
+            calc.expression = "1+2))"
+            calc._recompute_paren_depth()
+            assert calc._paren_depth == 0
+        finally:
+            root.destroy()
+
+    def test_paste_updates_paren_depth(self):
+        from src.gui.calculator import CalculatorContent
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            calc = CalculatorContent(root)
+            # Simuler un collage avec parenthèses
+            calc.expression = "((1+2)"
+            calc._recompute_paren_depth()
+            assert calc._paren_depth == 1
+            calc.expression = "((1+2))"
+            calc._recompute_paren_depth()
+            assert calc._paren_depth == 0
+        finally:
+            root.destroy()
