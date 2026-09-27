@@ -46,3 +46,25 @@ class TestContentReader:
         content, lines, size, ok = ContentReader.read_file_content(file, '.mo')
         assert ok is True
         assert lines >= 1
+
+    def test_streaming_line_range_returns_total_lines(self, tmp_path):
+        """BUG #5: line_range ne doit pas affecter num_lines retourné."""
+        # Créer un fichier > 1 Mo pour forcer le streaming (seuil = 1 Mo)
+        file = tmp_path / "big.txt"
+        # ~1.5 Mo = ~150000 lignes de 10 chars
+        lines_content = [f"ligne {i:06d}\n" for i in range(1, 150001)]
+        file.write_text("".join(lines_content), encoding='utf-8')
+        
+        # Lire seulement lignes 10000-10020
+        content, num_lines, size, ok = ContentReader.read_file_content(
+            file, '.txt', line_range=(10000, 10020), max_file_size_mb=10
+        )
+        
+        assert ok is True
+        # num_lines doit être le total du fichier (150000), pas les 21 extraites
+        assert num_lines == 150000, f"Expected 150000 total lines, got {num_lines}"
+        # Mais le contenu ne doit contenir que les lignes demandées
+        content_lines = content.splitlines()
+        assert len(content_lines) == 21
+        assert content_lines[0] == "ligne 010000"
+        assert content_lines[-1] == "ligne 010020"

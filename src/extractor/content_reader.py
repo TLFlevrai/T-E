@@ -152,11 +152,15 @@ class ContentReader:
         Lit un gros fichier par chunks et écrit directement le contenu.
         Pour l'extraction, on doit retourner le contenu complet.
         On lit par chunks mais on accumule (le fichier de sortie est écrit par le writer).
+
+        Retourne le nombre TOTAL de lignes du fichier (pas seulement celles extraites)
+        pour que les statistiques soient cohérentes.
         """
         logger.info("Lecture en streaming (%.1f Mo) : %s", file_size / 1024 / 1024, file_path)
 
         content_parts = []
-        total_lines = 0
+        total_lines_file = 0  # Nombre total de lignes dans le fichier
+        extracted_lines = 0   # Nombre de lignes dans la plage demandée
         start_line, end_line = line_range if line_range else (1, None)
 
         try:
@@ -171,12 +175,13 @@ class ContentReader:
                 current_line = 0
                 for line in f:
                     current_line += 1
+                    total_lines_file += 1
                     if current_line < start_line:
                         continue
                     if end_line is not None and current_line > end_line:
-                        break
+                        continue
                     content_parts.append(line)
-                    total_lines += 1
+                    extracted_lines += 1
 
             content = ''.join(content_parts)
 
@@ -184,7 +189,8 @@ class ContentReader:
                 from .content_formatter import format_json_content
                 content = format_json_content(content, file_path)
 
-            return content, total_lines, file_size, True
+            # Retourner le nombre TOTAL de lignes du fichier pour les stats
+            return content, total_lines_file, file_size, True
 
         except UnicodeDecodeError as e:
             logger.error("Erreur d'encodage en streaming %s : %s", file_path, e)
