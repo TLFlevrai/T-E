@@ -6,6 +6,7 @@ from collections import deque
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 import tkinter as tk
+from src.gui._eta import compute_eta, format_eta
 from src.i18n import _
 from src.logger import setup_logger
 from src.services.pdf_service import PDFService
@@ -25,21 +26,6 @@ ETA_THRESHOLD_SECONDS = 1.5
 # empile des milliers de callbacks after() et l'UI continue de "tourner"
 # après la fin de l'extraction.
 UI_UPDATE_INTERVAL_SECONDS = 0.06
-
-# ETA max : 1 heure (3600 secondes)
-MAX_ETA_SECONDS = 3600
-
-
-def _format_eta(seconds: float) -> str:
-    """Formate une durée en secondes vers 'Xmin Ys' ou 'Ys'."""
-    seconds = max(0, int(seconds))
-    if seconds < 60:
-        return f"{seconds}s"
-    minutes, secs = divmod(seconds, 60)
-    if minutes < 60:
-        return f"{minutes}min {secs}s"
-    hours, mins = divmod(minutes, 60)
-    return f"{hours}h {mins}min"
 
 
 def run_extraction(controller, service, selected_folder, options, selected_files,
@@ -69,32 +55,34 @@ def run_extraction(controller, service, selected_folder, options, selected_files
     # Estimation du temps restant + throttling des mises à jour UI
     eta_state = {
         'start_time': None,
+        'last_time': None,
         'last_current': 0,
         'eta': None,
-        'rates': deque(maxlen=10)  # FIX BUG #6 : moyenne glissante sur 10 dernières mesures
+        'rates': deque(maxlen=10),  # fenêtre glissante des taux instantanés
     }
     ui_state = {'last_scheduled': 0.0}
 
     def enhanced_progress_callback(current: int, total: int, current_file: str = "") -> None:
-        """Callback de progression enrichi : pourcentage + ETA."""
-        # Démarre le chrono au premier fichier
+        """Callback de progression enrichi : pourcentage + ETA.
+
+        La vitesse est mesurée entre DEUX appels consécutifs (delta et
+        temps écoulé depuis la dernière mesure), pas cumulée depuis le
+        début : voir src/gui/_eta.compute_eta.
+        """
+        now = time.monotonic()
         if eta_state['start_time'] is None:
-            eta_state['start_time'] = time.monotonic()
+            eta_state['start_time'] = now
+        last_time = eta_state['last_time']
+        if last_time is None:
+            # Première mesure : référence pour le prochain appel.
+            eta_state['last_time'] = now
         else:
-            elapsed = time.monotonic() - eta_state['start_time']
-            delta = current - eta_state['last_current']
-            if current > 0 and delta > 0 and elapsed > ETA_THRESHOLD_SECONDS:
-                # FIX BUG #6 : calculer le rate instantané et l'ajouter à la fenêtre glissante
-                instant_rate = delta / elapsed
-                eta_state['rates'].append(instant_rate)
-                # Moyenne glissante sur les taux disponibles
-                if eta_state['rates']:
-                    avg_rate = sum(eta_state['rates']) / len(eta_state['rates'])
-                    remaining = (total - current) / avg_rate if avg_rate > 0 else 0
-                    # Clamp ETA à 1 heure max
-                    if remaining > MAX_ETA_SECONDS:
-                        remaining = MAX_ETA_SECONDS
-                    eta_state['eta'] = remaining
+            eta_state['eta'] = compute_eta(
+                eta_state['rates'], current, total,
+                delta=current - eta_state['last_current'],
+                elapsed=now - last_time,
+            )
+        eta_state['last_time'] = now
         eta_state['last_current'] = current
 
         # Throttle : au plus ~16 mises à jour/s ; l'état final est garanti par
@@ -111,7 +99,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             if current_file:
                 if eta_state['eta'] is not None:
                     status_msg = _("Traitement : {} ({}/{}) - ETA {}").format(
-                        current_file, current, total, _format_eta(eta_state['eta']))
+                        current_file, current, total, format_eta(eta_state['eta']))
                 else:
                     status_msg = _("Traitement : {} ({}/{})").format(current_file, current, total)
                 controller.update_status(_("Extraction en cours..."), status_msg)
