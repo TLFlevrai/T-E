@@ -524,7 +524,7 @@ class CalculatorContent(ttk.Frame):
             ('1', lambda: self._digit('1')), ('2', lambda: self._digit('2')),
             ('3', lambda: self._digit('3')), ('.', lambda: self._insert_char('.')),
             ('±', self._toggle_sign), ('0', lambda: self._digit('0')),
-            ('=', self._evaluate), ('.', lambda: self._insert_char('.')),
+            ('Copier', self._copy_result), ('=', self._evaluate),
         ]
         for i, (txt, cmd) in enumerate(num_buttons):
             r, c = divmod(i, 4)
@@ -612,7 +612,7 @@ class CalculatorContent(ttk.Frame):
             if '.' in current_number:
                 return
             if not current_number or not current_number[-1].isdigit():
-                if self.expression and self.expression[-1] in '+-*/%(':
+                if self.expression and self.expression[-1] in {'+', '-', '*', '/', '%', '('}:
                     self.expression += '0'
             self.expression += '.'
         elif token == '(':
@@ -643,7 +643,7 @@ class CalculatorContent(ttk.Frame):
     def _insert_op(self, op: str):
         if self.expression == "Erreur":
             return
-        if self.expression and self.expression[-1] in '+-*/%(':
+        if self.expression and self.expression[-1] in {'+', '-', '*', '/', '%('}:
             self.expression = self.expression[:-1] + op
         else:
             self.expression += op
@@ -715,7 +715,7 @@ class CalculatorContent(ttk.Frame):
         i = len(self.expression)
         while i > 0 and (self.expression[i - 1].isdigit() or self.expression[i - 1] == '.'):
             i -= 1
-        if i > 0 and self.expression[i - 1] in '+-':
+        if i > 0 and self.expression[i - 1] in {'+', '-'}:
             i -= 1
         number = self.expression[i:]
         if not number:
@@ -867,16 +867,16 @@ class CalculatorContent(ttk.Frame):
         if key.isdigit():
             self._digit(key)
             return "break"
-        if key in '*/%':
+        if key in {'*', '/', '%'}:
             self._insert_op(key)
             return "break"
-        if key in '+-':
+        if key in {'+', '-'}:
             self._insert_op(key)
             return "break"
         if key == '.':
             self._insert_char('.')
             return "break"
-        if key in '()':
+        if key in {'(', ')'}:
             self._insert_char(key)
             self._recompute_paren_depth()
             return "break"

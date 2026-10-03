@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import math
+import tkinter as tk
+
 import pytest
+
 from src.gui.calculator import (
     safe_eval, _format_result, _CONSTANTS, _convert_base,
     _UNIT_CATEGORIES,
 )
+
+# Touches du pavé numérique du mode Unités (16 boutons uniques, 4x4).
+UNIT_KEYPAD_KEYS = {"7", "8", "9", "⌫", "4", "5", "6", "C",
+                    "1", "2", "3", ".", "±", "0", "Copier", "="}
+UNIT_KEYPAD_SIZE = 16
 
 
 class TestSafeEval:
@@ -224,40 +232,137 @@ class TestConstants:
 
 
 class TestParenDepth:
-    """Tests pour _paren_depth (BUG #11)."""
+    """Tests pour _paren_depth (BUG #11).
 
-    def test_recompute_paren_depth_simple(self):
-        from src.gui.calculator import CalculatorContent
-        import tkinter as tk
-        root = tk.Tk()
-        root.withdraw()
-        try:
-            calc = CalculatorContent(root)
-            calc.expression = "((1+2)*3)"
-            calc._recompute_paren_depth()
-            assert calc._paren_depth == 0
-            calc.expression = "((1+2)*3"
-            calc._recompute_paren_depth()
-            assert calc._paren_depth == 1
-            calc.expression = "1+2))"
-            calc._recompute_paren_depth()
-            assert calc._paren_depth == 0
-        finally:
-            root.destroy()
+    Utilise la fixture session tk_root : détruire un Tk() rend les
+    créations suivantes instables dans le même process (TclError
+    « Can't find a usable init.tcl »), voir conftest.py.
+    """
 
-    def test_paste_updates_paren_depth(self):
+    def test_recompute_paren_depth_simple(self, tk_root):
         from src.gui.calculator import CalculatorContent
-        import tkinter as tk
-        root = tk.Tk()
-        root.withdraw()
-        try:
-            calc = CalculatorContent(root)
-            # Simuler un collage avec parenthèses
-            calc.expression = "((1+2)"
-            calc._recompute_paren_depth()
-            assert calc._paren_depth == 1
-            calc.expression = "((1+2))"
-            calc._recompute_paren_depth()
-            assert calc._paren_depth == 0
-        finally:
-            root.destroy()
+        calc = CalculatorContent(tk_root)
+        calc.expression = "((1+2)*3)"
+        calc._recompute_paren_depth()
+        assert calc._paren_depth == 0
+        calc.expression = "((1+2)*3"
+        calc._recompute_paren_depth()
+        assert calc._paren_depth == 1
+        calc.expression = "1+2))"
+        calc._recompute_paren_depth()
+        assert calc._paren_depth == 0
+
+    def test_paste_updates_paren_depth(self, tk_root):
+        from src.gui.calculator import CalculatorContent
+        calc = CalculatorContent(tk_root)
+        # Simuler un collage avec parenthèses
+        calc.expression = "((1+2)"
+        calc._recompute_paren_depth()
+        assert calc._paren_depth == 1
+        calc.expression = "((1+2))"
+        calc._recompute_paren_depth()
+        assert calc._paren_depth == 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Clavier physique (_on_key) — la chaîne « +- » matchait tout caractère
+# présent dans la chaîne (bug historique), les ensembles la remplacent.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class _FakeKeyEvent:
+    """Événement clavier minimal compatible avec _on_key."""
+
+    def __init__(self, char: str, keysym: str = "", state: int = 0):
+        self.char = char
+        self.keysym = keysym
+        self.state = state
+
+
+class TestPhysicalKeyboard:
+    """Simulation de _on_key pour chaque touche (lot 1.1)."""
+
+    @pytest.fixture
+    def calc(self, tk_root):
+        from src.gui.calculator import CalculatorContent
+        # tk_root est session-scoped : créer plusieurs Tk() dans un même
+        # process est peu fiable (voir conftest.py).
+        return CalculatorContent(tk_root)
+
+
+    @pytest.mark.parametrize(
+        "keys, expected",
+        [
+            (["1", "2"], "12"),
+            (["1", "+", "2"], "1+2"),
+            (["8", "-", "3"], "8-3"),
+            (["6", "*", "7"], "6*7"),
+            (["9", "/", "3"], "9/3"),
+            (["1", "0", "%", "2"], "10%2"),
+            (["5", ".", "5"], "5.5"),
+            # Négatif : les autres caractères ne doivent PAS déclencher
+            # d'opérateur ni de chiffre (le bug « in '+-' » les avalait).
+            (["a"], "0"),
+            (["x"], "0"),
+            ([" "], "0"),
+        ],
+    )
+    def test_keys_build_expression(self, calc, keys, expected):
+        for k in keys:
+            event = _FakeKeyEvent(char=k, keysym=k)
+            calc._on_key(event)
+        assert calc.expression == expected
+
+    def test_return_evaluates(self, calc):
+        for k in "2+3":
+            calc._on_key(_FakeKeyEvent(char=k, keysym=k))
+        calc._on_key(_FakeKeyEvent(char="\r", keysym="Return"))
+        assert calc.expression == "5"
+
+    def test_backspace(self, calc):
+        for k in "123":
+            calc._on_key(_FakeKeyEvent(char=k, keysym=k))
+        calc._on_key(_FakeKeyEvent(char="\x08", keysym="BackSpace"))
+        assert calc.expression == "12"
+
+    def test_escape_clears(self, calc):
+        for k in "123":
+            calc._on_key(_FakeKeyEvent(char=k, keysym=k))
+        calc._on_key(_FakeKeyEvent(char="\x1b", keysym="Escape"))
+        assert calc.expression == "0"
+
+    def test_parentheses_tracked(self, calc):
+        for k in "(":
+            calc._on_key(_FakeKeyEvent(char=k, keysym=k))
+        assert calc.expression == "("
+        assert calc._paren_depth == 1
+        calc._on_key(_FakeKeyEvent(char=")", keysym=""))
+        assert calc.expression == "()"
+        assert calc._paren_depth == 0
+
+
+class TestUnitKeypadButtons:
+    """Le pavé Unités doit avoir 16 boutons numériques UNIQUES (lot 1.2)."""
+
+    def _unit_keypad_buttons(self, calc):
+        # Basculer en mode Unités comme le fait l'UI
+        calc._mode_var.set("Unités")
+        calc._switch_mode()
+        buttons = []
+        stack = list(calc._keypad_frame.winfo_children())
+        while stack:
+            w = stack.pop()
+            stack.extend(w.winfo_children())
+            if isinstance(w, tk.Button) or w.winfo_class() == "TButton":
+                buttons.append(str(w.cget("text")))
+        return buttons
+
+    def test_unit_keypad_has_unique_buttons(self, tk_root):
+        from src.gui.calculator import CalculatorContent
+        calc = CalculatorContent(tk_root)
+        texts = self._unit_keypad_buttons(calc)
+        num_pad = [t for t in texts if t in UNIT_KEYPAD_KEYS]
+        assert len(UNIT_KEYPAD_KEYS) == UNIT_KEYPAD_SIZE
+        assert len(num_pad) == UNIT_KEYPAD_SIZE
+        assert len(set(num_pad)) == UNIT_KEYPAD_SIZE, f"doublons : {sorted(num_pad)}"
+        assert texts.count(".") == 1, "le bouton « . » doit être unique"
