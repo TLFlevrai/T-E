@@ -153,8 +153,15 @@ class ExtractionService:
             # versions actives précédentes du même projet vers le dossier
             # d'archive. Best-effort : ne fait jamais échouer l'extraction.
             if merged_dict.get('archive_old'):
+                # L'archivage doit scanner le dossier de sortie EFFECTIF
+                # (celui qui contient les exports) : sans lui, il lirait
+                # le dossier par défaut de la config et raterait les
+                # versions produites dans un dossier personnalisé.
+                # Convention : archives dans <output_dir>/old_out/<projet>/,
+                # comme dans le cas par défaut et clean_versions().
                 self._archive_previous_versions(
-                    folder_name, Path(output_filename), log_callback)
+                    folder_name, Path(output_filename), log_callback,
+                    output_dir=effective_output_dir)
 
             logger.info("Extraction réussie : %s", output_filename)
             return True, str(output_filename), stats_dict
@@ -169,11 +176,18 @@ class ExtractionService:
             return False, None, None
 
     def _archive_previous_versions(self, project_name: str, new_file: Path,
-                                   log_callback=None) -> int:
-        """Archive les anciennes versions actives du projet (sauf la nouvelle)."""
+                                   log_callback=None,
+                                   output_dir: Path | None = None) -> int:
+        """
+        Archive les anciennes versions actives du projet (sauf la nouvelle).
+
+        output_dir : dossier de sortie effectif contenant les versions à
+        archiver (ex. <custom>/out quand l'utilisateur a choisi un dossier
+        personnalisé). None = dossier de sortie par défaut de la config.
+        """
         try:
             from src.services.version_service import VersionArchiveService
-            archive_service = VersionArchiveService()
+            archive_service = VersionArchiveService(output_dir=output_dir)
             archived = 0
             for entries in archive_service.scan_projects().values():
                 for entry in entries:
