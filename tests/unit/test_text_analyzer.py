@@ -100,12 +100,33 @@ class TestDetectEncoding:
     def test_utf8(self):
         raw = "Bonjour éàü".encode('utf-8')
         result = detect_encoding_bytes(raw)
-        assert 'UTF' in result['encoding']
+        # chardet renvoie des noms en minuscules ('utf-8')
+        assert 'utf' in result['encoding'].lower()
 
     def test_utf8_bom(self):
         raw = b'\xef\xbb\xbf' + "Hello".encode('utf-8')
         result = detect_encoding_bytes(raw)
         assert result['bom'] == 'UTF-8'
+
+    def test_detect_encoding_utf32_le(self):
+        # Le BOM UTF-32-LE commence par le BOM UTF-16-LE : sans test des
+        # BOM 4 octets en premier, il est confondu avec UTF-16 (lot 1.3).
+        raw = b'\xff\xfe\x00\x00' + "Bonjour".encode('utf-32-le')
+        result = detect_encoding_bytes(raw)
+        assert result['bom'] == 'UTF-32'
+        assert 'utf-32' in result['encoding'].lower()
+
+    def test_detect_encoding_utf32_be(self):
+        raw = b'\x00\x00\xfe\xff' + "Bonjour".encode('utf-32-be')
+        result = detect_encoding_bytes(raw)
+        assert result['bom'] == 'UTF-32'
+        assert 'utf-32' in result['encoding'].lower()
+
+    def test_detect_encoding_utf16_le(self):
+        raw = b'\xff\xfe' + "Bonjour".encode('utf-16-le')
+        result = detect_encoding_bytes(raw)
+        assert result['bom'] == 'UTF-16'
+        assert 'utf-16' in result['encoding'].lower()
 
     def test_crlf(self):
         raw = b"line1\r\nline2\r\n"

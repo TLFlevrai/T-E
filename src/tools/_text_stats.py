@@ -128,25 +128,37 @@ def detect_encoding(file_path: Path) -> dict:
     return detect_encoding_bytes(raw)
 
 
+def _bom_confidence(raw: bytes, bom: str) -> int:
+    """Confiance quand un BOM a été identifié (le BOM fait foi)."""
+    bom_encoding = {'UTF-32': 'utf-32', 'UTF-16': 'utf-16', 'UTF-8': 'utf-8'}[bom]
+    try:
+        raw.decode(bom_encoding)
+    except UnicodeDecodeError:
+        return 60
+    else:
+        return 100
+
+
 def detect_encoding_bytes(raw: bytes) -> dict:
     """Détecte l'encodage depuis des octets bruts."""
     if not raw:
         return {'encoding': 'unknown', 'confidence': 0, 'bom': 'Aucune', 'line_ending': 'Inconnu'}
 
-    # BOM detection
+    # BOM detection : les BOM de 4 octets doivent être testés AVANT ceux
+    # de 2 octets, sinon b'\xff\xfe\x00\x00' (UTF-32-LE) est confondu avec
+    # b'\xff\xfe' (UTF-16-LE) suivi de NULs.
     bom = 'Aucune'
     encoding = 'UTF-8'
-    if raw[:3] == b'\xef\xbb\xbf':
-        bom = 'UTF-8'
-        encoding = 'UTF-8 (BOM)'
-        raw = raw[3:]
+    if raw[:4] in (b'\xff\xfe\x00\x00', b'\x00\x00\xfe\xff'):
+        bom = 'UTF-32'
+        encoding = 'UTF-32'
     elif raw[:2] in (b'\xff\xfe', b'\xfe\xff'):
         bom = 'UTF-16'
         encoding = 'UTF-16'
-        raw = raw[2:]
-    elif raw[:4] in (b'\xff\xfe\x00\x00', b'\x00\x00\xfe\xff'):
-        bom = 'UTF-32'
-        encoding = 'UTF-32'
+    elif raw[:3] == b'\xef\xbb\xbf':
+        bom = 'UTF-8'
+        encoding = 'UTF-8 (BOM)'
+        raw = raw[3:]
 
     # Line ending detection
     crlf = raw.count(b'\r\n')
@@ -159,23 +171,29 @@ def detect_encoding_bytes(raw: bytes) -> dict:
     else:
         line_ending = 'LF (Unix)'
 
-    # Try chardet if available
-    confidence = 95
-    try:
-        import chardet
-        result = chardet.detect(raw)
-        if result and result['encoding']:
-            encoding = result['encoding']
-            confidence = round((result['confidence'] or 0.8) * 100)
-    except ImportError:
-        # Heuristic: try UTF-8
+    if bom != 'Aucune':
+        # Le BOM fait foi : il a été retiré des octets analysés (UTF-8)
+        # ou les codecs utf-16/utf-32 le gèrent nativement, alors que
+        # chardet ne le voit plus et under-estime l'encodage réel.
+        confidence = _bom_confidence(raw, bom)
+    else:
+        # Try chardet if available
+        confidence = 95
         try:
-            raw.decode('utf-8')
-            encoding = 'UTF-8' if bom == 'Aucune' else encoding
-            confidence = 98
-        except UnicodeDecodeError:
-            encoding = 'Latin-1'
-            confidence = 70
+            import chardet
+            result = chardet.detect(raw)
+            if result and result['encoding']:
+                encoding = result['encoding']
+                confidence = round((result['confidence'] or 0.8) * 100)
+        except ImportError:
+            # Heuristic: try UTF-8
+            try:
+                raw.decode('utf-8')
+                encoding = 'UTF-8'
+                confidence = 98
+            except UnicodeDecodeError:
+                encoding = 'Latin-1'
+                confidence = 70
 
     return {
         'encoding': encoding,
