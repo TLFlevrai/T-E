@@ -7,11 +7,11 @@ from tkinter import ttk, messagebox
 from src.i18n import _
 from src.config import get_config
 from .base_dialog import BaseDialog
-from .settings import FormatsTab, FiltersTab, OutputTab, AdvancedTab
+from .settings import FormatsTab, FiltersTab, ExtensionsTab, OutputTab, AdvancedTab
 
 
 class SettingsDialog(BaseDialog):
-    """Dialogue des paramètres avec onglets : Formats, Filtres, Sortie, Avancé."""
+    """Dialogue des paramètres : Formats, Extensions, Filtres, Sortie, Avancé."""
 
     def __init__(self, parent, ui_widgets):
         super().__init__(
@@ -40,6 +40,11 @@ class SettingsDialog(BaseDialog):
         self.notebook.add(self.formats_frame, text=_("Formats"))
         self.formats_tab = FormatsTab(self.formats_frame, self)
 
+        # --- Onglet Extensions avancées ---
+        self.extensions_frame = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(self.extensions_frame, text=_("Extensions"))
+        self.extensions_tab = ExtensionsTab(self.extensions_frame, self)
+
         # --- Onglet Filtres ---
         self.filters_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(self.filters_frame, text=_("Filtres"))
@@ -50,7 +55,7 @@ class SettingsDialog(BaseDialog):
         self.notebook.add(self.output_frame, text=_("Sortie"))
         self.output_tab = OutputTab(self.output_frame, self)
 
-        # --- Onglet Avancé ---
+        # --- Onglet Avancé (après Extensions : il pilote ces cases) ---
         self.advanced_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(self.advanced_frame, text=_("Avancé"))
         self.advanced_tab = AdvancedTab(self.advanced_frame, self)
@@ -75,6 +80,7 @@ class SettingsDialog(BaseDialog):
                 'show_file_paths': extraction.show_file_paths,
                 'include_structure': extraction.include_structure,
                 'include_txt': extraction.include_txt,
+                'include_md': extraction.include_md,
                 'include_po': extraction.include_po,
                 'include_mo': extraction.include_mo,
                 'include_html': extraction.include_html,
@@ -97,6 +103,17 @@ class SettingsDialog(BaseDialog):
             self.advanced_tab.log_autoscroll_var.set(True)
             self.advanced_tab.preset_var.set('custom')
 
+            # Extensions avancées : « Restaurer défauts » doit aussi
+            # décocher les cases, sinon la config sauvegardée garderait des
+            # extensions que l'onglet affiche comme désactivées.
+            self._reset_extraction_defaults()
+
+    def _reset_extraction_defaults(self):
+        """Décoche les cases d'extensions avancées (défaut : liste vide)."""
+        from src.gui.ui_builder.ui_widgets import apply_extra_extensions
+
+        apply_extra_extensions(self.ui, [])
+
     def _on_ok(self):
         """Sauvegarde et ferme."""
         # Sauvegarder les options GUI
@@ -109,9 +126,30 @@ class SettingsDialog(BaseDialog):
         # Sauvegarder le dossier de sortie et la langue en une seule fois
         self.config._config.output_dir = self.output_tab.output_dir_var.get()
         self.config._config.language = self.advanced_tab.lang_var.get()
+
+        # Persiste les cases d'extraction (include_md, extra_extensions, ...)
+        # dans la config : sans cela, cocher une extension n'aurait aucun
+        # effet au redémarrage.
+        self._save_extraction_options()
+
         self.config.save()
 
         self.destroy()
+
+    def _save_extraction_options(self):
+        """Recopie les cases d'extraction vers la config persistée.
+
+        `model_validate` repasse par le validateur de `extra_extensions` :
+        la liste blanche est donc appliquée au moment de la sauvegarde, et
+        non seulement à l'extraction.
+        """
+        from src.gui.ui_builder.ui_widgets import apply_extraction_flags
+
+        extraction = self.config._config.extraction
+        apply_extraction_flags(self.ui, extraction)
+        self.config._config.extraction = type(extraction).model_validate(
+            extraction.model_dump()
+        )
 
 
 def open_settings_dialog(parent, ui_widgets):

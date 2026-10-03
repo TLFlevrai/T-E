@@ -1,5 +1,6 @@
 # src/gui/selection/utils.py
 from __future__ import annotations
+from src.config.schema import ALLOWED_EXTRA_EXTENSIONS
 from src.utils import human_size
 
 def get_allowed_extensions(options):
@@ -21,6 +22,8 @@ def get_allowed_extensions(options):
         extensions.append('.json')
     if get_opt('include_txt', False):
         extensions.append('.txt')
+    if get_opt('include_md', False):
+        extensions.append('.md')
     if get_opt('include_po', False):
         extensions.append('.po')
     if get_opt('include_mo', False):
@@ -31,6 +34,19 @@ def get_allowed_extensions(options):
         extensions.append('.css')
     if get_opt('include_js', True):
         extensions.append('.js')
+    # Extensions supplémentaires : la liste blanche a déjà été appliquée
+    # en amont (schéma Pydantic). On revérifie ici pour qu'un dict d'options
+    # forgé ne fasse jamais passer un .exe dans l'arborescence.
+    extra = get_opt('extra_extensions', [])
+    if isinstance(extra, (list, tuple)):
+        for ext in extra:
+            if not isinstance(ext, str):
+                continue
+            ext = ext.strip().lower()
+            if not ext.startswith('.'):
+                ext = '.' + ext
+            if ext in ALLOWED_EXTRA_EXTENSIONS and ext not in extensions:
+                extensions.append(ext)
     return extensions
 
 def format_size(size_bytes):

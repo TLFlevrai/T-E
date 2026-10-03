@@ -1112,81 +1112,6 @@ msgstr "TE — {}"
 msgid "Preset d'export"
 msgstr "Preset d'export"
 
-#~ msgid "  - Fichiers Python : {}"
-#~ msgstr "  - Fichiers Python : {}"
-
-#~ msgid "  - Fichiers JSON : {}"
-#~ msgstr "  - Fichiers JSON : {}"
-
-#~ msgid "  - Fichiers TXT : {}"
-#~ msgstr "  - Fichiers TXT : {}"
-
-#~ msgid "  - Fichiers PO : {}"
-#~ msgstr "  - Fichiers PO : {}"
-
-#~ msgid "  - Fichiers MO : {}"
-#~ msgstr "  - Fichiers MO : {}"
-
-#~ msgid "  - Fichiers HTML : {}"
-#~ msgstr "  - Fichiers HTML : {}"
-
-#~ msgid "  - Fichiers CSS : {}"
-#~ msgstr "  - Fichiers CSS : {}"
-
-#~ msgid "  - Fichiers JS : {}"
-#~ msgstr "  - Fichiers JS : {}"
-
-#~ msgid "--- {} ---"
-#~ msgstr "--- {} ---"
-
-#~ msgid "Échec du nettoyage : {}"
-#~ msgstr "Échec du nettoyage : {}"
-
-#~ msgid "Envoyer un fichier à un autre PC"
-#~ msgstr "Envoyer un fichier à un autre PC"
-
-#~ msgid "Le serveur distant ne répond pas (timeout)"
-#~ msgstr "Le serveur distant ne répond pas (délai dépassé)"
-
-#~ msgid "Échec de l'envoi (timeout)"
-#~ msgstr "Échec de l'envoi (délai dépassé)"
-
-#~ msgid "Le serveur distant a refusé la connexion"
-#~ msgstr "Le serveur distant a refusé la connexion"
-
-#~ msgid "Échec de l'envoi (refus)"
-#~ msgstr "Échec de l'envoi (refus)"
-
-#~ msgid "Échec de l'envoi : {}"
-#~ msgstr "Échec de l'envoi : {}"
-
-#~ msgid "Extracteur de code Python, JSON & TXT"
-#~ msgstr "Extracteur de code Python/JSON/TXT"
-
-#~ msgid "Dossier à scanner :"
-#~ msgstr "Dossier sélectionné : {}"
-
-#~ msgid "Parcourir"
-#~ msgstr "Parcourir"
-
-#~ msgid "Extraire le code"
-#~ msgstr "Extraire le code"
-
-#~ msgid "Sélectionner..."
-#~ msgstr "Sélectionner..."
-
-#~ msgid "Gérer les versions"
-#~ msgstr "Gérer les versions"
-
-#~ msgid "Réseau..."
-#~ msgstr "Réseau..."
-
-#~ msgid "Effacer le journal"
-#~ msgstr "Effacer le journal"
-
-#~ msgid "Journal"
-#~ msgstr "Journal"
-
 #: src/tools/youtube.py
 msgid "URL de la vidéo YouTube"
 msgstr "URL de la vidéo YouTube"
@@ -1290,3 +1215,121 @@ msgstr "Télécharger des vidéos YouTube (MP4 ou MP3)."
 #: src/tools/youtube.py
 msgid "yt-dlp n'est pas installé. Lancez : pip install yt-dlp"
 msgstr "yt-dlp n'est pas installé. Lancez : pip install yt-dlp"
+
+msgid "Inclure les fichiers .md (Markdown)"
+msgstr ""
+
+msgid "Fichiers Markdown (.md)"
+msgstr "Fichiers Markdown (.md)"
+
+msgid "Tous les .md"
+msgstr "Tous les .md"
+
+msgid "Extensions"
+msgstr "Extensions"
+
+msgid "Aucune extension supplémentaire disponible."
+msgstr "Aucune extension supplémentaire disponible."
+
+msgid "YAML (.yaml, .yml)"
+msgstr "YAML (.yaml, .yml)"
+
+msgid "INI (.ini, .cfg)"
+msgstr "INI (.ini, .cfg)"
+
+msgid "Shell (.sh)"
+msgstr "Shell (.sh)"
+
+msgid "PowerShell (.ps1)"
+msgstr "PowerShell (.ps1)"
+
+msgid "reStructuredText (.rst)"
+msgstr "reStructuredText (.rst)"
+
+msgid ""
+"Ces extensions alimentent « extra_extensions » dans la configuration. Seules"
+" les extensions autorisées (liste blanche) sont prises en compte."
+msgstr ""
+"Ces extensions alimentent « extra_extensions » dans la configuration. Seules"
+" les extensions autorisées (liste blanche) sont prises en compte."
+
+msgid "Autres extensions"
+msgstr "Autres extensions"
+
+msgid "  - Fichiers MD : {}\n"
+msgstr "  - Fichiers MD : {}\n"
+
+#~ msgid "  - Fichiers Python : {}"
+#~ msgstr "  - Fichiers Python : {}"
+
+#~ msgid "  - Fichiers JSON : {}"
+#~ msgstr "  - Fichiers JSON : {}"
+
+#~ msgid "  - Fichiers TXT : {}"
+#~ msgstr "  - Fichiers TXT : {}"
+
+#~ msgid "  - Fichiers PO : {}"
+#~ msgstr "  - Fichiers PO : {}"
+
+#~ msgid "  - Fichiers MO : {}"
+#~ msgstr "  - Fichiers MO : {}"
+
+#~ msgid "  - Fichiers HTML : {}"
+#~ msgstr "  - Fichiers HTML : {}"
+
+#~ msgid "  - Fichiers CSS : {}"
+#~ msgstr "  - Fichiers CSS : {}"
+
+#~ msgid "  - Fichiers JS : {}"
+#~ msgstr "  - Fichiers JS : {}"
+
+#~ msgid "--- {} ---"
+#~ msgstr "--- {} ---"
+
+#~ msgid "Échec du nettoyage : {}"
+#~ msgstr "Échec du nettoyage : {}"
+
+#~ msgid "Envoyer un fichier à un autre PC"
+#~ msgstr "Envoyer un fichier à un autre PC"
+
+#~ msgid "Le serveur distant ne répond pas (timeout)"
+#~ msgstr "Le serveur distant ne répond pas (délai dépassé)"
+
+#~ msgid "Échec de l'envoi (timeout)"
+#~ msgstr "Échec de l'envoi (délai dépassé)"
+
+#~ msgid "Le serveur distant a refusé la connexion"
+#~ msgstr "Le serveur distant a refusé la connexion"
+
+#~ msgid "Échec de l'envoi (refus)"
+#~ msgstr "Échec de l'envoi (refus)"
+
+#~ msgid "Échec de l'envoi : {}"
+#~ msgstr "Échec de l'envoi : {}"
+
+#~ msgid "Extracteur de code Python, JSON & TXT"
+#~ msgstr "Extracteur de code Python/JSON/TXT"
+
+#~ msgid "Dossier à scanner :"
+#~ msgstr "Dossier sélectionné : {}"
+
+#~ msgid "Parcourir"
+#~ msgstr "Parcourir"
+
+#~ msgid "Extraire le code"
+#~ msgstr "Extraire le code"
+
+#~ msgid "Sélectionner..."
+#~ msgstr "Sélectionner..."
+
+#~ msgid "Gérer les versions"
+#~ msgstr "Gérer les versions"
+
+#~ msgid "Réseau..."
+#~ msgstr "Réseau..."
+
+#~ msgid "Effacer le journal"
+#~ msgstr "Effacer le journal"
+
+#~ msgid "Journal"
+#~ msgstr "Journal"

@@ -9,6 +9,7 @@ from src.extractor._filters import (
     DEFAULT_IGNORED_PATTERNS,
     EXCLUDED_FILE_SUFFIXES,
     EXCLUDED_FILE_NAMES,
+    ALLOWED_EXTRA_EXTENSIONS,
     should_ignore_dir,
     should_ignore_file,
     prune_dirs,
@@ -208,12 +209,25 @@ class FileDiscoveryService:
         # On suppose que la liste est petite -> tuple plus rapide que set pour < 10 items
         return any(filename.endswith(ext) for ext in self._allowed_extensions)
 
+    def _is_extension_allowed(self, ext: str) -> bool:
+        """Défense en profondeur : une extension d'`extra_extensions` doit
+        toujours appartenir à la liste blanche, même si la validation
+        Pydantic a été court-circuitée (options construites à la main)."""
+        if not isinstance(ext, str):
+            return False
+        ext = ext.strip().lower()
+        if not ext.startswith('.'):
+            ext = '.' + ext
+        return ext in ALLOWED_EXTRA_EXTENSIONS
+
     def _build_extension_list(self) -> List[str]:
         extensions = ['.py']
         if self.options.include_json:
             extensions.append('.json')
         if self.options.include_txt:
             extensions.append('.txt')
+        if self.options.include_md:
+            extensions.append('.md')
         if self.options.include_po:
             extensions.append('.po')
         if self.options.include_mo:
@@ -224,4 +238,15 @@ class FileDiscoveryService:
             extensions.append('.css')
         if self.options.include_js:
             extensions.append('.js')
+        # Extensions additionnelles (liste blanche) : ajoute l'extension à
+        # chaque case cochée de l'onglet « Extensions avancées ».
+        for ext in getattr(self.options, 'extra_extensions', None) or []:
+            if not self._is_extension_allowed(ext):
+                logger.warning("Extension ignorée (hors liste blanche) : %r", ext)
+                continue
+            ext = ext.strip().lower()
+            if not ext.startswith('.'):
+                ext = '.' + ext
+            if ext not in extensions:
+                extensions.append(ext)
         return extensions

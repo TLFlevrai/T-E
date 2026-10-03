@@ -39,11 +39,17 @@ def build_settings_view(shell) -> ttk.Frame:
     notebook = ttk.Notebook(frame)
     notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 12))
 
-    from src.gui.settings import AdvancedTab, FiltersTab, FormatsTab, OutputTab
+    from src.gui.settings import (
+        AdvancedTab, ExtensionsTab, FiltersTab, FormatsTab, OutputTab,
+    )
 
     formats_frame = ttk.Frame(notebook, padding=10)
     notebook.add(formats_frame, text=_("Formats"))
     adapter.formats_tab = FormatsTab(formats_frame, adapter)
+
+    extensions_frame = ttk.Frame(notebook, padding=10)
+    notebook.add(extensions_frame, text=_("Extensions"))
+    adapter.extensions_tab = ExtensionsTab(extensions_frame, adapter)
 
     filters_frame = ttk.Frame(notebook, padding=10)
     notebook.add(filters_frame, text=_("Filtres"))
@@ -86,11 +92,17 @@ def _rebuild_notebook(frame, adapter):
     notebook = ttk.Notebook(frame)
     notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 12))
 
-    from src.gui.settings import AdvancedTab, FiltersTab, FormatsTab, OutputTab
+    from src.gui.settings import (
+        AdvancedTab, ExtensionsTab, FiltersTab, FormatsTab, OutputTab,
+    )
 
     formats_frame = ttk.Frame(notebook, padding=10)
     notebook.add(formats_frame, text=_("Formats"))
     adapter.formats_tab = FormatsTab(formats_frame, adapter)
+
+    extensions_frame = ttk.Frame(notebook, padding=10)
+    notebook.add(extensions_frame, text=_("Extensions"))
+    adapter.extensions_tab = ExtensionsTab(extensions_frame, adapter)
 
     filters_frame = ttk.Frame(notebook, padding=10)
     notebook.add(filters_frame, text=_("Filtres"))
@@ -124,9 +136,16 @@ def _reset_defaults(ui, adapter) -> None:
 
     defaults = ExtractionOptions().model_dump()
     for key, value in defaults.items():
+        if key == 'extra_extensions':
+            continue
         var = getattr(ui, key, None)
         if var:
             var.set(value)
+
+    # Extensions avancées : « Restaurer défauts » doit aussi décocher les
+    # cases, sinon la config sauvegardée garderait des extensions que
+    # l'onglet affiche comme désactivées.
+    _reset_extraction_extensions(ui)
 
     if adapter.advanced_tab:
         adapter.advanced_tab.log_height_var.set(12)
@@ -134,10 +153,33 @@ def _reset_defaults(ui, adapter) -> None:
         adapter.advanced_tab.preset_var.set('custom')
 
 
+def _reset_extraction_extensions(ui) -> None:
+    """Décoche les cases d'extensions avancées (valeur par défaut : vide)."""
+    from src.gui.ui_builder.ui_widgets import apply_extra_extensions
+
+    apply_extra_extensions(ui, [])
+
+
+def _save_extraction_options(adapter) -> None:
+    """Recopie les cases d'extraction vers la config persistée.
+
+    `model_validate` repasse par le validateur de `extra_extensions` : la
+    liste blanche est appliquée à la sauvegarde, pas seulement à l'extraction.
+    """
+    from src.gui.ui_builder.ui_widgets import apply_extraction_flags
+
+    extraction = adapter.config._config.extraction
+    apply_extraction_flags(adapter.ui, extraction)
+    adapter.config._config.extraction = type(extraction).model_validate(
+        extraction.model_dump()
+    )
+
+
 def _save(adapter) -> None:
     """Persiste la configuration actuelle."""
     from src.gui.toast import show_toast
     try:
+        _save_extraction_options(adapter)
         adapter.config.save()
         show_toast(adapter.parent_widget, _("Paramètres enregistrés"),
                    type_='info', parent=adapter.parent_widget)

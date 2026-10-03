@@ -6,6 +6,7 @@ Modes :
 - Vidéo → MP3 (via yt-dlp)
 - Images : PNG ↔ JPG ↔ BMP ↔ WEBP (+ redimensionnement)
 - CSV → JSON
+- YAML → JSON (via PyYAML, dépendance optionnelle)
 - Audio : MP3 → WAV, WAV → MP3
 - Conversion par lot (plusieurs fichiers)
 """
@@ -47,6 +48,7 @@ def build_convert_view(shell) -> ttk.Frame:
     notebook.add(_build_video_tab(notebook), text=str(_("Vidéo → MP3")))
     notebook.add(_build_image_tab(notebook), text=str(_("Images")))
     notebook.add(_build_csv_tab(notebook), text=str(_("CSV → JSON")))
+    notebook.add(_build_yaml_tab(notebook), text=str(_("YAML → JSON")))
     notebook.add(_build_audio_tab(notebook), text=str(_("Audio")))
     notebook.add(_build_batch_tab(notebook), text=str(_("Par lot")))
 
@@ -386,6 +388,120 @@ def _build_csv_tab(parent) -> ttk.Frame:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Onglet YAML → JSON
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _yaml_module():
+    """Importe PyYAML à la demande.
+
+    PyYAML est une dépendance OPTIONNELLE : l'onglet doit rester
+    constructible (et explaining) même quand le module manque, sinon le
+    convertisseur entier devient inutilisable sur une installation légère.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return None
+    else:
+        return yaml
+
+
+def _build_yaml_tab(parent) -> ttk.Frame:
+    frame = ttk.Frame(parent, padding=12)
+
+    ttk.Label(frame, text=str(_("YAML → JSON")), font=get_font('body_bold')).pack(anchor=tk.W)
+
+    yaml_mod = _yaml_module()
+
+    src_var, dst_var = tk.StringVar(), tk.StringVar()
+    state = {'src': None, 'dst': None}
+
+    ttk.Label(frame, text=str(_("Fichier YAML :"))).pack(anchor=tk.W)
+    ttk.Entry(frame, textvariable=src_var, state='readonly').pack(fill=tk.X, pady=(0, 4))
+    ttk.Button(frame, text=str(_("Parcourir...")),
+               command=lambda: _browse_yaml(state, src_var, dst_var)).pack(anchor=tk.W, pady=(0, 8))
+
+    ttk.Label(frame, text=str(_("Destination :"))).pack(anchor=tk.W)
+    ttk.Entry(frame, textvariable=dst_var, state='readonly').pack(fill=tk.X, pady=(0, 4))
+
+    enc_frame = ttk.Frame(frame)
+    enc_frame.pack(fill=tk.X, pady=(0, 8))
+    ttk.Label(enc_frame, text=str(_("Encodage :"))).pack(side=tk.LEFT)
+    enc_var = tk.StringVar(value="utf-8")
+    ttk.OptionMenu(enc_frame, enc_var, "utf-8", "utf-8", "latin-1", "cp1252").pack(side=tk.LEFT, padx=4)
+
+    indent_var = tk.BooleanVar(value=True)
+    ttk.Checkbutton(frame, text=str(_("Indentation JSON")), variable=indent_var).pack(anchor=tk.W)
+
+    progress, status_var, log_text = _add_progress_and_log(frame)
+
+    if yaml_mod is None:
+        # Dépendance absente : on explique au lieu d'échouer à l'ouverture
+        # de l'outil (sinon tout le convertisseur devient inaccessible).
+        ttk.Label(
+            frame,
+            text=str(_("PyYAML est requis pour convertir du YAML. "
+                      "Installez-le avec : pip install PyYAML")),
+            foreground=get_color('fg_muted'),
+            wraplength=460,
+            justify=tk.LEFT,
+        ).pack(anchor=tk.W, pady=(8, 0))
+        btn = ttk.Button(frame, text=str(_("Convertir")), state='disabled')
+        btn.pack(anchor=tk.E, pady=(8, 0))
+        return frame
+
+    def _convert_yaml():
+        src = state['src']
+        if not src or not src.exists():
+            messagebox.showerror(str(_("Erreur")), str(_("Sélectionnez un fichier YAML.")))
+            return
+        dst = src.with_suffix('.json')
+        state['dst'] = dst
+        dst_var.set(str(dst))
+        encoding = enc_var.get()
+
+        def run():
+            try:
+                safe_after(frame, 0, lambda: progress.config(value=30))
+                # Lecture tolérante au BOM : les fichiers YAML produits par
+                # Windows/VS Code commencent souvent par un BOM UTF-8, que
+                # yaml.safe_load interpréterait sinon comme un caractère invalide.
+                raw = src.read_text(encoding=encoding.replace('utf-8', 'utf-8-sig'),
+                                    errors='replace')
+                data = yaml_mod.safe_load(raw)
+                formatted = json.dumps(data, indent=2 if indent_var.get() else None,
+                                       ensure_ascii=False)
+                dst.write_text(formatted, encoding='utf-8')
+                safe_after(frame, 0, lambda: progress.config(value=100))
+                entries = len(data) if isinstance(data, (dict, list)) else 1
+                _log(log_text, f"✓ {src.name} → {dst.name} ({entries} entrée(s))")
+            except Exception as exc:
+                _log(log_text, f"✗ {exc}")
+                safe_after(frame, 0,
+                           lambda e=exc: messagebox.showerror(str(_("Erreur")), str(e)))
+            finally:
+                safe_after(frame, 0, lambda: progress.config(value=0))
+
+        threading.Thread(target=run, daemon=True).start()
+
+    ttk.Button(frame, text=str(_("Convertir")), command=_convert_yaml,
+               style='AppPrimary.TButton').pack(anchor=tk.E, pady=(8, 0))
+    return frame
+
+
+def _browse_yaml(state, src_var, dst_var):
+    path = filedialog.askopenfilename(
+        title=str(_("Sélectionner un fichier YAML")),
+        filetypes=[("YAML", "*.yaml *.yml"), ("Tous", "*.*")])
+    if path:
+        state['src'] = Path(path)
+        src_var.set(path)
+        dst = Path(path).with_suffix('.json')
+        state['dst'] = dst
+        dst_var.set(str(dst))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Onglet Audio (MP3 ↔ WAV)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -694,12 +810,12 @@ def _convert_audio_file(src: Path, dst: Path, log_text=None):
 TOOL = Tool(
     id='convert',
     name="Alchimiste",
-    description="Transmutez vos fichiers : documents, vidéos, images, audio, CSV.",
+    description="Transmutez vos fichiers : documents, vidéos, images, audio, CSV, YAML.",
     category="Conversion",
     icon='🧬',
     shortcut='Ctrl+2',
     view=build_convert_view,
-    keywords=('convertir', 'convert', 'transmuter', 'pdf', 'txt', 'json', 'image', 'csv', 'audio', 'video', 'mp3'),
+    keywords=('convertir', 'convert', 'transmuter', 'pdf', 'txt', 'json', 'image', 'csv', 'yaml', 'yml', 'audio', 'video', 'mp3'),
     order=1,
 )
 
@@ -709,9 +825,9 @@ def register(reg, cmds) -> None:
     cmds.register(Command(
         id='tool.convert',
         label="Alchimiste",
-        description="Transmuter des fichiers (documents, vidéos, images, audio, CSV)",
+        description="Transmuter des fichiers (documents, vidéos, images, audio, CSV, YAML)",
         shortcut='Ctrl+2',
         icon='🧬',
         tool_id='convert',
-        keywords=('convertir', 'transmuter', 'pdf', 'txt', 'json', 'image', 'csv', 'audio', 'video', 'mp3'),
+        keywords=('convertir', 'transmuter', 'pdf', 'txt', 'json', 'image', 'csv', 'yaml', 'yml', 'audio', 'video', 'mp3'),
     ))

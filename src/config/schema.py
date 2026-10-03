@@ -2,7 +2,32 @@
 from __future__ import annotations
 import secrets
 from typing import Optional, Tuple
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# Liste blanche des extensions sélectionnables via `extra_extensions`.
+# C'est l'unique source de vérité : la valider ici empêche d'inclure des
+# binaires ou des formats non textuels (.exe, .dll, ...) via une config
+# forgée à la main. Toute nouvelle extension à exposer s'ajoute ICI.
+ALLOWED_EXTRA_EXTENSIONS = frozenset({
+    # Config & build
+    '.toml', '.yaml', '.yml', '.ini', '.cfg', '.conf',
+    '.xml', '.plist',
+    # Documentation
+    '.md', '.rst', '.adoc',
+    # Scripts
+    '.sh', '.bash', '.zsh', '.ps1', '.bat', '.cmd',
+    # Data
+    '.csv', '.tsv', '.sql',
+    # Front
+    '.ts', '.tsx', '.jsx', '.vue', '.svelte',
+    '.scss', '.sass', '.less',
+    # Autres langages
+    '.go', '.rs', '.java', '.kt', '.cs', '.php', '.rb',
+    '.c', '.h', '.cpp', '.hpp', '.lua', '.r', '.jl',
+    '.proto', '.graphql', '.gql', '.tf',
+    # Config DevOps
+    '.dockerfile', '.gitignore', '.gitattributes', '.editorconfig',
+})
 
 
 def _generate_auth_token() -> str:
@@ -36,6 +61,7 @@ class ExtractionOptions(BaseModel):
     show_file_paths: bool = Field(default=True, description="Afficher les chemins complets des fichiers")
     include_structure: bool = Field(default=True, description="Inclure la structure du projet dans l'export")
     include_txt: bool = Field(default=False, description="Inclure les fichiers .txt")
+    include_md: bool = Field(default=False, description="Inclure les fichiers .md (Markdown)")
     include_po: bool = Field(default=False, description="Inclure les fichiers .po (traductions)")
     include_mo: bool = Field(default=False, description="Inclure les fichiers .mo (compilés)")
     include_html: bool = Field(default=True, description="Inclure les fichiers .html et .htm")
@@ -66,6 +92,50 @@ class ExtractionOptions(BaseModel):
     )
     max_depth: int = Field(default=25, ge=0, description="Profondeur max de parcours (0 = illimité)")
     force_include_all: bool = Field(default=False, description="Si True, ignore les filtres de fichiers (debug uniquement)")
+    extra_extensions: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Extensions supplémentaires à inclure, en plus des flags "
+            "include_* classiques. Ex: ['.toml', '.yaml', '.sh']. "
+            "Seules les extensions de ALLOWED_EXTRA_EXTENSIONS sont "
+            "acceptées (liste blanche) ; les autres sont ignorées."
+        )
+    )
+
+    @field_validator('extra_extensions', mode='before')
+    @classmethod
+    def _validate_extra_extensions(cls, v: object) -> object:
+        """Normalise puis filtre les extensions hors liste blanche.
+
+        Le mode `before` est volontaire : une config.json écrite à la main
+        peut contenir `null` ou un nombre dans la liste, ce que `list[str]`
+        rejeterait en faisant perdre TOUS les autres réglages (le chargement
+        de la config retombe alors sur les valeurs par défaut). Les entrées
+        inexploitables sont donc écartées ici, une par une.
+
+        La liste blanche protège d'une config forgée (`.exe`, `.dll`, ...)
+        qui ferait sortir du binaire dans l'export : une extension inconnue
+        est ignorée silencieusement.
+        """
+        if v is None:
+            return []
+        if isinstance(v, str):
+            # Tolère un scalaire unique (config écrite à la main).
+            v = [v]
+        if not isinstance(v, (list, tuple, set, frozenset)):
+            return []
+        cleaned: list[str] = []
+        for ext in v:
+            if not isinstance(ext, str):
+                continue
+            ext = ext.strip().lower()
+            if not ext:
+                continue
+            if not ext.startswith('.'):
+                ext = '.' + ext
+            if ext in ALLOWED_EXTRA_EXTENSIONS and ext not in cleaned:
+                cleaned.append(ext)
+        return cleaned
 
 
 class GuiConfig(BaseModel):

@@ -14,6 +14,14 @@ class ReportBuilder:
         num_dirs = self.context.num_dirs
         num_packages = self.context.num_packages
 
+        # Extensions supplémentaires : tout ce qui n'est pas une extension
+        # classique (voir CLASSIC_STAT_KEYS). Ce sont les extensions issues
+        # d'`extra_extensions` ; seules celles vues dans le dossier courant
+        # sont listées, pour ne pas noyer le rapport de zéros.
+        extra_keys = self.context.extra_stat_keys()
+        extra_counts = {k: stats.get(k, 0) for k in extra_keys if stats.get(k, 0)}
+        extra_line_counts = {k: lines.get(k, 0) for k in extra_keys if stats.get(k, 0)}
+
         write_statistics_section(
             out_file,
             self.context.folder_path,
@@ -36,5 +44,9 @@ class ReportBuilder:
             lines.get('js', 0),
             total_size,
             num_dirs=num_dirs,
-            num_packages=num_packages
+            num_packages=num_packages,
+            md_count=stats.get('md', 0),
+            total_lines_md=lines.get('md', 0),
+            extra_counts=extra_counts,
+            extra_line_counts=extra_line_counts,
         )

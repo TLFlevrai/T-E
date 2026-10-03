@@ -22,6 +22,7 @@
     "show_file_paths": true,
     "include_structure": true,
     "include_txt": false,
+    "include_md": false,
     "include_po": false,
     "include_mo": false,
     "include_html": true,
@@ -59,7 +60,8 @@
       "*.egg-info"
     ],
     "max_depth": 25,
-    "force_include_all": false
+    "force_include_all": false,
+    "extra_extensions": []
   },
   "gui": {
     "window_width": 1100,

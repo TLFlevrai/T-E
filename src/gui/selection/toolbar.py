@@ -17,6 +17,7 @@ class SelectionToolbar:
             ('.py', "🐍", _("Tous les .py")),
             ('.json', "📄", _("Tous les .json")),
             ('.txt', "📝", _("Tous les .txt")),
+            ('.md', "📝", _("Tous les .md")),
             ('.po', "🌐", _("Tous les .po")),
             ('.mo', "📦", _("Tous les .mo")),
             ('.html', "🌍", _("Tous les .html")),

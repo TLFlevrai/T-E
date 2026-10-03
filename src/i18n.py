@@ -220,14 +220,21 @@ def change_language(lang_code: str):
     """
     Change la langue et recharge les traductions à chaud.
     Écrit dans config.json puis déclenche reload_translations().
+
+    Le chemin utilisé est `src.config.CONFIG_PATH` (et non un chemin
+    calculé localement) : c'est le même que celui respecté par le
+    chargeur de configuration, donc un test peut le rediriger sans que
+    l'appel n'écrase le config.json réel du projet.
     """
-    config_path = Path(__file__).parent.parent / "config.json"
     import json
+
+    from src.config import CONFIG_PATH
+
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
         data['language'] = lang_code
-        with open(config_path, 'w', encoding='utf-8') as f:
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         # Recharger la config (le singleton Config doit être reset pour prendre en compte)

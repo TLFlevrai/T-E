@@ -26,6 +26,67 @@ class TestContentReader:
         assert ok is True
         assert lines == 0
 
+    def test_read_markdown_file(self, tmp_path):
+        file = tmp_path / "README.md"
+        file.write_text("# Titre\n\nDu **Markdown**.\n", encoding='utf-8')
+        content, lines, size, ok = ContentReader.read_file_content(file, '.md')
+        assert ok is True
+        assert "# Titre" in content
+        assert "**Markdown**" in content  # contenu brut, pas réinterprété
+        assert lines == 3
+        assert size > 0
+
+    def test_read_toml_file(self, tmp_path):
+        file = tmp_path / "pyproject.toml"
+        file.write_text('[project]\nname = "te"\nversion = "2.1.0"\n', encoding='utf-8')
+        content, lines, size, ok = ContentReader.read_file_content(file, '.toml')
+        assert ok is True
+        assert '[project]' in content
+        assert 'name = "te"' in content
+        assert lines == 3
+
+    def test_read_yaml_file(self, tmp_path):
+        file = tmp_path / "ci.yml"
+        file.write_text("on:\n  push:\n    branches: [main]\n", encoding='utf-8')
+        content, lines, size, ok = ContentReader.read_file_content(file, '.yml')
+        assert ok is True
+        assert 'branches: [main]' in content
+        assert lines == 3
+
+    def test_read_ini_file(self, tmp_path):
+        file = tmp_path / "setup.cfg"
+        file.write_text("[metadata]\nname = te\n", encoding='utf-8')
+        content, lines, size, ok = ContentReader.read_file_content(file, '.cfg')
+        assert ok is True
+        assert "[metadata]" in content
+        assert lines == 2
+
+    def test_read_xml_file(self, tmp_path):
+        file = tmp_path / "pom.xml"
+        file.write_text('<project>\n  <name>te</name>\n</project>\n', encoding='utf-8')
+        content, lines, size, ok = ContentReader.read_file_content(file, '.xml')
+        assert ok is True
+        assert '<name>te</name>' in content
+        assert lines == 3
+
+    def test_read_markdown_with_utf8_bom(self, tmp_path):
+        """Un .md Windows/VS Code contient souvent un BOM : il ne doit pas
+        laisser un caractère parasite en tête de section."""
+        file = tmp_path / "doc.md"
+        file.write_bytes('\ufeff# Titre\n'.encode())
+        content, lines, size, ok = ContentReader.read_file_content(file, '.md')
+        assert ok is True
+        assert content.startswith('# Titre')
+        assert '\ufeff' not in content
+
+    def test_read_binary_named_like_extra_extension_rejected(self, tmp_path):
+        """La détection binaire s'applique aussi aux extensions ajoutées."""
+        file = tmp_path / "data.csv"
+        file.write_bytes(b'\x00\x01\x02\x03binary\xff')
+        content, lines, size, ok = ContentReader.read_file_content(file, '.csv')
+        assert ok is False
+        assert "ERREUR" in content
+
     def test_read_nonexistent_file(self, tmp_path):
         file = tmp_path / "nonexistent.txt"
         content, lines, size, ok = ContentReader.read_file_content(file, '.txt')

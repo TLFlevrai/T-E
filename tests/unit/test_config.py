@@ -41,6 +41,56 @@ class TestConfigSchema:
         opts = ExtractionOptions(include_json=False, ignore_git=False)
         assert opts.include_json is False
         assert opts.ignore_git is False
+
+    def test_include_md_default_false(self):
+        """Rétro-compatibilité : .md reste exclu par défaut."""
+        assert ExtractionOptions().include_md is False
+
+    def test_include_md_custom(self):
+        assert ExtractionOptions(include_md=True).include_md is True
+
+    def test_extra_extensions_default_empty(self):
+        """Rétro-compatibilité : aucune extension supplémentaire par défaut."""
+        assert ExtractionOptions().extra_extensions == []
+
+    def test_extra_extensions_keeps_whitelisted(self):
+        opts = ExtractionOptions(extra_extensions=['.toml', '.yaml', '.yml', '.sh'])
+        assert opts.extra_extensions == ['.toml', '.yaml', '.yml', '.sh']
+
+    def test_extra_extensions_filters_not_allowed(self):
+        """Sécurité : .exe / .dll doivent être retirés silencieusement."""
+        opts = ExtractionOptions(
+            extra_extensions=['.toml', '.exe', '.dll', '.so', '.pyd', '.yaml']
+        )
+        assert opts.extra_extensions == ['.toml', '.yaml']
+
+    def test_extra_extensions_normalizes_case_and_leading_dot(self):
+        opts = ExtractionOptions(extra_extensions=['TOML', 'Yaml', '  .ini  '])
+        assert opts.extra_extensions == ['.toml', '.yaml', '.ini']
+
+    def test_extra_extensions_deduplicates(self):
+        opts = ExtractionOptions(extra_extensions=['.toml', '.TOML', 'toml'])
+        assert opts.extra_extensions == ['.toml']
+
+    def test_extra_extensions_drops_empty_and_non_string(self):
+        opts = ExtractionOptions(extra_extensions=['', '   ', None, 42, '.xml'])
+        assert opts.extra_extensions == ['.xml']
+
+    def test_extra_extensions_empty_ignores_unsafe_entries(self):
+        opts = ExtractionOptions(extra_extensions=['.exe', '../etc/passwd', '/abs/path'])
+        assert opts.extra_extensions == []
+
+    def test_extra_extensions_independent_default_lists(self):
+        """Chaque instance doit avoir sa propre liste (pas de défaut partagé)."""
+        a = ExtractionOptions()
+        b = ExtractionOptions()
+        a.extra_extensions.append('.toml')
+        assert b.extra_extensions == []
+
+    def test_extra_extensions_roundtrip_through_dump(self):
+        opts = ExtractionOptions(extra_extensions=['.toml', '.exe'])
+        restored = ExtractionOptions(**opts.model_dump())
+        assert restored.extra_extensions == ['.toml']
     
     def test_network_config_validation(self):
         # Port valide

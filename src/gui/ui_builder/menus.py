@@ -6,7 +6,8 @@ from src.i18n import _, pgettext, change_language as i18n_change_language, regis
 from src.gui.recent_files import load_recent_folders, clear_recent_folders
 from src.gui.settings_dialog import open_settings_dialog
 from src.gui.theme_editor import open_theme_editor
-from .ui_widgets import UIWidgets
+from .ui_widgets import UIWidgets, apply_extra_extensions
+from .presets import preset_options
 
 
 def build_menus(parent, ui: UIWidgets):
@@ -263,36 +264,19 @@ def _open_calculator(parent):
 
 
 def apply_preset(ui: UIWidgets, preset: str):
-    """Applique un preset d'export rapide (fonction publique)."""
-    presets = {
-        'python_only': {
-            'include_json': False, 'include_html': False, 'include_css': False,
-            'include_js': False, 'include_txt': False, 'include_po': False,
-            'include_mo': False, 'include_structure': True,
-        },
-        'web_assets': {
-            'include_json': True, 'include_html': True, 'include_css': True,
-            'include_js': True, 'include_txt': False, 'include_po': False,
-            'include_mo': False, 'include_structure': True,
-        },
-        'full': {
-            'include_json': True, 'include_html': True, 'include_css': True,
-            'include_js': True, 'include_txt': True, 'include_po': True,
-            'include_mo': True, 'include_structure': True,
-            'include_statistics': True, 'include_file_metadata': True,
-        },
-        'minimal': {
-            'include_json': False, 'include_html': False, 'include_css': False,
-            'include_js': False, 'include_txt': False, 'include_po': False,
-            'include_mo': False, 'include_structure': True,
-            'include_statistics': True,
-        },
-    }
-    if preset in presets:
-        for key, value in presets[preset].items():
-            var = getattr(ui, key, None)
-            if var:
-                var.set(value)
+    """Applique un preset d'export rapide (fonction publique).
+
+    Les valeurs viennent de src.gui.ui_builder.presets, partagées avec
+    l'onglet Avancé des paramètres : ajouter une extension n'oblige plus
+    à réécrire deux listes de presets divergentes.
+    """
+    for key, value in preset_options(preset).items():
+        if key == 'extra_extensions':
+            apply_extra_extensions(ui, value)
+            continue
+        var = getattr(ui, key, None)
+        if var:
+            var.set(value)
 
 
 def unregister_menu_refresh(ui: UIWidgets):

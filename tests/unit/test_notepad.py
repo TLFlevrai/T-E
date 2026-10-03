@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from src.tools._syntax import detect_language, SyntaxHighlighter, COLORS, TAG_NAMES
+from src.tools._syntax import detect_language, COLORS, TAG_NAMES
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -54,6 +54,19 @@ class TestDetectLanguage:
 
     def test_unknown_ext(self):
         assert detect_language("file.xyz") == "text"
+
+    def test_yaml_ext(self):
+        """Les deux extensions YAML doivent être détectées comme 'yaml'."""
+        assert detect_language("ci.yml") == "yaml"
+        assert detect_language("values.yaml") == "yaml"
+
+    def test_yaml_ext_case_insensitive(self):
+        """Un fichier en MAJUSCULES (.YML) doit aussi être reconnu."""
+        assert detect_language("CI.YML") == "yaml"
+        assert detect_language("Values.YAML") == "yaml"
+
+    def test_yaml_ext_with_full_path(self):
+        assert detect_language("C:/projets/app/.github/workflows/ci.yml") == "yaml"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -108,6 +121,58 @@ class TestSyntaxPatterns:
         patterns = _build_css_patterns()
         assert len(patterns) > 0
 
+    def test_yaml_patterns_compile(self):
+        """Les patterns YAML doivent se compiler et ne réutiliser que des
+        tags déjà déclarés (pas de nouveau tag dans COLORS)."""
+        import re
+        from src.tools._syntax import _build_yaml_patterns, TAG_NAMES
+        patterns = _build_yaml_patterns()
+        assert len(patterns) > 0
+        for token, pattern in patterns:
+            assert isinstance(token, str)
+            re.compile(pattern)  # lève re.error si invalide
+            assert token in TAG_NAMES, f"tag inconnu: {token}"
+
+    def test_yaml_patterns_cover_expected_tokens(self):
+        from src.tools._syntax import _build_yaml_patterns
+        tokens = {token for token, _ in _build_yaml_patterns()}
+        # commentaire, chaîne, clé, nombre, constante doivent être couverts
+        assert {'comment', 'string', 'key', 'number', 'constant'} <= tokens
+
+    def test_yaml_patterns_match_real_content(self):
+        """Vérifie que les patterns YAML reconnaissent du contenu réel."""
+        import re
+        from src.tools._syntax import _build_yaml_patterns
+        content = (
+            "# commentaire\n"
+            "name: demo\n"
+            "version: 1.2\n"
+            "enabled: true\n"
+            "title: \"texte\"\n"
+            "base: &ancrage\n"
+            "alias: *ancrage\n"
+        )
+        hits = {
+            token: [m.group(0) for m in re.compile(pattern, re.M).finditer(content)]
+            for token, pattern in _build_yaml_patterns()
+        }
+        assert hits['comment'] == ['# commentaire']
+        assert 'name' in hits['key'] and 'enabled' in hits['key']
+        assert hits['number'] == ['1.2']
+        assert hits['constant'] == ['true']
+        assert hits['string'] == ['"texte"']
+        assert '&ancrage' in hits['decorator']
+        assert '*ancrage' in hits['decorator']
+
+    def test_yaml_string_pattern_handles_escaped_apostrophe(self):
+        """En YAML, '' est l'échappement d'une apostrophe dans une chaîne
+        simple : le pattern doit garder la chaîne entière."""
+        import re
+        from src.tools._syntax import _build_yaml_patterns
+        pattern = dict(_build_yaml_patterns())['string']
+        found = re.compile(pattern).findall("msg: 'it''s here'\n")
+        assert found == ["'it''s here'"]
+
     def test_all_patterns_are_valid_regex(self):
         import re
         from src.tools._syntax import _PATTERNS
@@ -117,6 +182,75 @@ class TestSyntaxPatterns:
                     re.compile(pattern)
                 except re.error as e:
                     pytest.fail(f"Invalid regex for {lang}/{token}: {e}")
+
+
+class TestHighlightPositions:
+    """Positionnement des tags tkinter sur plusieurs lignes.
+
+    Régression : les offsets de `re` sont des index de caractère ABSOLUS,
+    alors que tkinter attend (ligne, colonne). Les confondre faisait
+    retomber tout le surlignage sur la première ligne — pour TOUS les
+    langages (un fichier YAML est presque toujours multi-lignes).
+    """
+
+    @staticmethod
+    def _spans(text_widget):
+        spans = {}
+        for tag in text_widget.tag_names():
+            rng = [str(r) for r in text_widget.tag_ranges(tag)]
+            if rng:
+                spans[tag] = [text_widget.get(rng[i], rng[i + 1])
+                              for i in range(0, len(rng), 2)]
+        return spans
+
+    def test_yaml_highlight_spans_multiple_lines(self, tk_root):
+        import tkinter as tk
+
+        from src.tools._syntax import SyntaxHighlighter
+
+        content = (
+            "# commentaire\n"
+            "name: demo\n"
+            "version: 1.2\n"
+            "enabled: true\n"
+            "title: \"texte\"\n"
+            "base: &ancrage\n"
+            "alias: *ancrage\n"
+        )
+        text = tk.Text(tk_root)
+        text.insert("1.0", content)
+        SyntaxHighlighter(text).highlight_range("1.0", tk.END, "yaml")
+
+        spans = self._spans(text)
+        assert spans["syn_comment"] == ["# commentaire"]
+        assert spans["syn_key"] == ["name", "version", "enabled", "title",
+                                    "base", "alias"]
+        assert spans["syn_number"] == ["1.2"]
+        assert spans["syn_constant"] == ["true"]
+        assert spans["syn_string"] == ['"texte"']
+        assert spans["syn_decorator"] == ["&ancrage", "*ancrage"]
+        text.destroy()
+
+    @pytest.mark.parametrize("lang,content,tag,expected", [
+        ("python", "# un\nx = 42\ndef f():\n    return True\n",
+         "syn_comment", ["# un"]),
+        # le pattern de clé JSON capture les guillemets : '"clef"'
+        ("json", '{\n  "clef": 1,\n  "autre": true\n}\n',
+         "syn_key", ['"clef"', '"autre"']),
+        ("css", ".a {\n  color: red;\n}\n", "syn_bracket", ["{", "}"]),
+    ])
+    def test_existing_languages_still_multiline(self, tk_root, lang, content,
+                                               tag, expected):
+        """Le correctif de position ne doit pas casser Python/JSON."""
+        import tkinter as tk
+
+        from src.tools._syntax import SyntaxHighlighter
+
+        text = tk.Text(tk_root)
+        text.insert("1.0", content)
+        SyntaxHighlighter(text).highlight_range("1.0", tk.END, lang)
+        assert self._spans(text)[tag] == expected
+        text.destroy()
 
 
 # ═══════════════════════════════════════════════════════════════════════════

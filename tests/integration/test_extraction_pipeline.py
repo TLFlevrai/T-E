@@ -143,6 +143,204 @@ class TestExtractionPipeline:
         assert (dest / "config.json").is_file()
 
 
+def _extract(tmp_path, **overrides):
+    """Lance une extraction réelle sur un dossier temporaire.
+
+    Retourne (texte_du_journal, stats_dict).
+    """
+    from src.config import ExtractionOptions
+    from src.extractor.context import ExtractionContext
+    from src.extractor.engine import ExtractionEngine
+
+    opts = ExtractionOptions(include_structure=False, **overrides)
+    out = tmp_path / "export.txt"
+    ctx = ExtractionContext(
+        folder_path=tmp_path / "src",
+        options=opts,
+        output_path=out,
+    )
+    engine = ExtractionEngine(ctx)
+    assert engine.run() == 'success', "extraction échouée"
+    return out.read_text(encoding='utf-8'), ctx.stats
+
+
+def _write_project(root):
+    """Crée un mini-projet contenant .py, .md, .toml, .yml et .yaml."""
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "main.py").write_text("print('hi')\n", encoding='utf-8')
+    (root / "README.md").write_text("# Projet\n\nDocumentation.\n", encoding='utf-8')
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "demo"\n', encoding='utf-8')
+    (root / "ci.yml").write_text("on: push\n", encoding='utf-8')
+    (root / "values.yaml").write_text("version: 2\n", encoding='utf-8')
+    return root
+
+
+class TestExtractionNewExtensions:
+    """Extraction bout en bout avec .md et extra_extensions."""
+
+    def test_md_ignored_by_default(self, tmp_path):
+        """include_md=False (défaut) : aucun .md dans le journal."""
+        src = _write_project(tmp_path / "src")
+        text, _stats = _extract(tmp_path)
+        assert "README.md" not in text
+        assert "Documentation." not in text
+        assert "FICHIER Markdown" not in text
+        assert "main.py" in text
+        assert src.exists()
+
+    def test_md_included_when_enabled(self, tmp_path):
+        """include_md=True : section « FICHIER Markdown » + contenu."""
+        _write_project(tmp_path / "src")
+        text, stats = _extract(tmp_path, include_md=True)
+        assert "FICHIER Markdown : README.md" in text
+        assert "# Projet" in text
+        assert "Fichiers Markdown (.md)      : 1" in text
+        assert stats['md'] == 1
+
+    def test_extra_extensions_included(self, tmp_path):
+        """extra_extensions : .toml et .yml inclus, .md toujours exclu."""
+        _write_project(tmp_path / "src")
+        text, stats = _extract(
+            tmp_path, extra_extensions=['.toml', '.yaml', '.yml'])
+        assert "FICHIER TOML : pyproject.toml" in text
+        assert "FICHIER YAML : ci.yml" in text
+        assert 'name = "demo"' in text
+        assert "FICHIER Markdown" not in text
+        assert stats['toml'] == 1
+        # .yml et .yaml partagent le compteur 'yaml' (synonymes fusionnés)
+        assert stats['yaml'] == 2
+
+    def test_extra_extensions_match_exactly(self, tmp_path):
+        """`.yaml` n'inclut pas implicitement `.yml` : ce sont deux entrées
+        distinctes de la liste blanche (l'onglet GUI coche les deux d'un
+        seul geste, via EXTRA_EXT_CHOICES)."""
+        _write_project(tmp_path / "src")
+        text, stats = _extract(tmp_path, extra_extensions=['.yaml'])
+        assert "ci.yml" not in text
+        # .yaml est bien extrait, et lui seul
+        assert "FICHIER YAML : values.yaml" in text
+        assert stats['yaml'] == 1
+        assert stats.get('yml', 0) == 0
+
+    def test_extra_extensions_stats_and_totals(self, tmp_path):
+        """Les compteurs supplémentaires alimentent le total du rapport."""
+        _write_project(tmp_path / "src")
+        text, stats = _extract(tmp_path, include_md=True,
+                               extra_extensions=['.toml', '.yaml', '.yml'])
+        # 1 .py + 1 .md + 1 .toml + 2 YAML (.yml + .yaml regroupés)
+        assert "Nombre total de fichiers     : 5" in text
+        assert "Autres extensions" in text
+        assert "Fichiers TOML                : 1" in text
+        assert "Fichiers YAML                : 2" in text
+        assert "Nombre de lignes (TOML)      : 2" in text
+        assert stats['py'] == 1
+        assert stats['md'] == 1
+        assert stats['yaml'] == 2
+
+    def test_extra_extensions_reject_binary(self, tmp_path):
+        """Un .exe listé dans extra_extensions reste exclu (liste blanche)."""
+        src = _write_project(tmp_path / "src")
+        (src / "payload.exe").write_bytes(b'MZ\x90\x00binary')
+        text, _stats = _extract(
+            tmp_path, extra_extensions=['.toml', '.exe'])
+        assert "payload.exe" not in text
+        assert "pyproject.toml" in text
+
+    def test_reconstruction_roundtrip_with_new_types(self, tmp_path):
+        """Le Builder reconstruit correctement .md et .toml depuis le log."""
+        from src.tools.builder import build_project, parse_log, validate_log
+
+        _write_project(tmp_path / "src")
+        text, _stats = _extract(tmp_path, include_md=True,
+                               extra_extensions=['.toml'])
+
+        valid, msg = validate_log(text)
+        assert valid is True, msg
+
+        plan = parse_log(text)
+        assert plan.total_files == 3
+        assert {f.rel_path for f in plan.files} == {
+            "main.py", "README.md", "pyproject.toml"}
+
+        dest = tmp_path / "rebuilt"
+        stats = build_project(plan, dest, skip_binary=True, skip_hidden=True)
+        assert stats['created'] == 3
+        assert (dest / "README.md").read_text(encoding='utf-8').startswith("# Projet")
+        assert 'name = "demo"' in (dest / "pyproject.toml").read_text(encoding='utf-8')
+
+
+class TestExtractionYaml:
+    """Extraction bout en bout des deux extensions YAML."""
+
+    def test_both_yaml_extensions_produce_two_sections(self, tmp_path):
+        """extra_extensions=['.yaml', '.yml'] -> deux sections
+        « FICHIER YAML : ... », une par fichier."""
+        _write_project(tmp_path / "src")
+        text, stats = _extract(
+            tmp_path, extra_extensions=['.yaml', '.yml'])
+
+        assert text.count("FICHIER YAML : ") == 2, text
+        assert "FICHIER YAML : ci.yml" in text
+        assert "FICHIER YAML : values.yaml" in text
+        # .yml et .yaml sont regroupés dans un compteur unique
+        assert stats['yaml'] == 2
+        assert 'yml' not in stats
+
+    def test_yaml_content_is_preserved_verbatim(self, tmp_path):
+        """Le contenu YAML est recopié tel quel (jamais réinterprété)."""
+        src = _write_project(tmp_path / "src")
+        (src / "docker-compose.yaml").write_text(
+            "services:\n  web:\n    image: nginx:alpine\n",
+            encoding='utf-8')
+        text, _stats = _extract(
+            tmp_path, extra_extensions=['.yaml', '.yml'])
+
+        assert "FICHIER YAML : docker-compose.yaml" in text
+        assert "image: nginx:alpine" in text
+
+    def test_yaml_stats_reported_under_other_extensions(self, tmp_path):
+        """Les compteurs YAML apparaissent sous « Autres extensions »."""
+        _write_project(tmp_path / "src")
+        text, _stats = _extract(
+            tmp_path, extra_extensions=['.yaml', '.yml'])
+
+        assert "Autres extensions" in text
+        assert "Fichiers YAML                : 2" in text
+        assert "Nombre total de fichiers     : 3" in text  # .py + 2 YAML
+
+    def test_yaml_ignored_without_extra_extensions(self, tmp_path):
+        """Sans extra_extensions, aucun YAML n'est extrait (rétro-compat)."""
+        _write_project(tmp_path / "src")
+        text, stats = _extract(tmp_path)
+        assert "FICHIER YAML" not in text
+        assert "ci.yml" not in text
+        assert "values.yaml" not in text
+        assert stats.get('yaml', 0) == 0
+
+    def test_yaml_roundtrip_through_builder(self, tmp_path):
+        """Le Builder reconstruit les fichiers YAML depuis le journal."""
+        from src.tools.builder import build_project, parse_log, validate_log
+
+        _write_project(tmp_path / "src")
+        text, _stats = _extract(
+            tmp_path, extra_extensions=['.yaml', '.yml'])
+
+        valid, msg = validate_log(text)
+        assert valid is True, msg
+
+        plan = parse_log(text)
+        assert plan.total_files == 3
+        assert {f.rel_path for f in plan.files} == {
+            "main.py", "ci.yml", "values.yaml"}
+
+        dest = tmp_path / "rebuilt"
+        stats = build_project(plan, dest, skip_binary=True, skip_hidden=True)
+        assert stats['created'] == 3
+        assert (dest / "ci.yml").read_text(encoding='utf-8') == "on: push\n"
+        assert (dest / "values.yaml").read_text(encoding='utf-8') == "version: 2\n"
+
+
 def _make_log(lines):
     """Helper: join lines into a log string."""
     return "\n".join(lines)

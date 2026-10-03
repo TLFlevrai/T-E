@@ -303,6 +303,7 @@ def build_notepad_view(shell) -> ttk.Frame:
                 ("Python", "*.py"),
                 ("JavaScript", "*.js"),
                 ("JSON", "*.json"),
+                ("YAML", "*.yaml *.yml"),
                 ("HTML", "*.html *.htm"),
                 ("CSS", "*.css"),
             ])
@@ -347,6 +348,7 @@ def build_notepad_view(shell) -> ttk.Frame:
                 ("Markdown", "*.md"),
                 ("Python", "*.py"),
                 ("JSON", "*.json"),
+                ("YAML", "*.yaml *.yml"),
                 ("HTML", "*.html"),
                 ("CSS", "*.css"),
                 ("Tous", "*.*"),

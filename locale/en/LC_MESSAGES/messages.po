@@ -1111,81 +1111,6 @@ msgstr "TE — {}"
 msgid "Preset d'export"
 msgstr "Export preset"
 
-#~ msgid "  - Fichiers Python : {}"
-#~ msgstr "  - Python files: {}"
-
-#~ msgid "  - Fichiers JSON : {}"
-#~ msgstr "  - JSON files: {}"
-
-#~ msgid "  - Fichiers TXT : {}"
-#~ msgstr "  - TXT files: {}"
-
-#~ msgid "  - Fichiers PO : {}"
-#~ msgstr "  - PO files: {}"
-
-#~ msgid "  - Fichiers MO : {}"
-#~ msgstr "  - MO files: {}"
-
-#~ msgid "  - Fichiers HTML : {}"
-#~ msgstr "  - HTML files: {}"
-
-#~ msgid "  - Fichiers CSS : {}"
-#~ msgstr "  - CSS files: {}"
-
-#~ msgid "  - Fichiers JS : {}"
-#~ msgstr "  - JS files: {}"
-
-#~ msgid "--- {} ---"
-#~ msgstr "--- {} ---"
-
-#~ msgid "Échec du nettoyage : {}"
-#~ msgstr "Cleanup failed: {}"
-
-#~ msgid "Envoyer un fichier à un autre PC"
-#~ msgstr "Send file to another PC"
-
-#~ msgid "Le serveur distant ne répond pas (timeout)"
-#~ msgstr "Remote server not responding (timeout)"
-
-#~ msgid "Échec de l'envoi (timeout)"
-#~ msgstr "Send failed (timeout)"
-
-#~ msgid "Le serveur distant a refusé la connexion"
-#~ msgstr "Remote server refused connection"
-
-#~ msgid "Échec de l'envoi (refus)"
-#~ msgstr "Send failed (refused)"
-
-#~ msgid "Échec de l'envoi : {}"
-#~ msgstr "Send failed: {}"
-
-#~ msgid "Extracteur de code Python, JSON & TXT"
-#~ msgstr "Python/JSON/TXT Code Extractor"
-
-#~ msgid "Dossier à scanner :"
-#~ msgstr "Selected folder: {}"
-
-#~ msgid "Parcourir"
-#~ msgstr "Browse"
-
-#~ msgid "Extraire le code"
-#~ msgstr "Extract Code"
-
-#~ msgid "Sélectionner..."
-#~ msgstr "Select..."
-
-#~ msgid "Gérer les versions"
-#~ msgstr "Manage Versions"
-
-#~ msgid "Réseau..."
-#~ msgstr "Network..."
-
-#~ msgid "Effacer le journal"
-#~ msgstr "Clear Log"
-
-#~ msgid "Journal"
-#~ msgstr "Log"
-
 #: src/tools/youtube.py
 msgid "URL de la vidéo YouTube"
 msgstr "YouTube video URL"
@@ -1289,3 +1214,121 @@ msgstr "Download YouTube videos (MP4 or MP3)."
 #: src/tools/youtube.py
 msgid "yt-dlp n'est pas installé. Lancez : pip install yt-dlp"
 msgstr "yt-dlp is not installed. Run: pip install yt-dlp"
+
+msgid "Inclure les fichiers .md (Markdown)"
+msgstr ""
+
+msgid "Fichiers Markdown (.md)"
+msgstr "Markdown files (.md)"
+
+msgid "Tous les .md"
+msgstr "All .md"
+
+msgid "Extensions"
+msgstr "Extensions"
+
+msgid "Aucune extension supplémentaire disponible."
+msgstr "No additional extensions available."
+
+msgid "YAML (.yaml, .yml)"
+msgstr "YAML (.yaml, .yml)"
+
+msgid "INI (.ini, .cfg)"
+msgstr "INI (.ini, .cfg)"
+
+msgid "Shell (.sh)"
+msgstr "Shell (.sh)"
+
+msgid "PowerShell (.ps1)"
+msgstr "PowerShell (.ps1)"
+
+msgid "reStructuredText (.rst)"
+msgstr "reStructuredText (.rst)"
+
+msgid ""
+"Ces extensions alimentent « extra_extensions » dans la configuration. Seules"
+" les extensions autorisées (liste blanche) sont prises en compte."
+msgstr ""
+"These extensions feed \"extra_extensions\" in the configuration. Only "
+"whitelisted extensions are taken into account."
+
+msgid "Autres extensions"
+msgstr "Other extensions"
+
+msgid "  - Fichiers MD : {}\n"
+msgstr "  - MD files: {}\n"
+
+#~ msgid "  - Fichiers Python : {}"
+#~ msgstr "  - Python files: {}"
+
+#~ msgid "  - Fichiers JSON : {}"
+#~ msgstr "  - JSON files: {}"
+
+#~ msgid "  - Fichiers TXT : {}"
+#~ msgstr "  - TXT files: {}"
+
+#~ msgid "  - Fichiers PO : {}"
+#~ msgstr "  - PO files: {}"
+
+#~ msgid "  - Fichiers MO : {}"
+#~ msgstr "  - MO files: {}"
+
+#~ msgid "  - Fichiers HTML : {}"
+#~ msgstr "  - HTML files: {}"
+
+#~ msgid "  - Fichiers CSS : {}"
+#~ msgstr "  - CSS files: {}"
+
+#~ msgid "  - Fichiers JS : {}"
+#~ msgstr "  - JS files: {}"
+
+#~ msgid "--- {} ---"
+#~ msgstr "--- {} ---"
+
+#~ msgid "Échec du nettoyage : {}"
+#~ msgstr "Cleanup failed: {}"
+
+#~ msgid "Envoyer un fichier à un autre PC"
+#~ msgstr "Send file to another PC"
+
+#~ msgid "Le serveur distant ne répond pas (timeout)"
+#~ msgstr "Remote server not responding (timeout)"
+
+#~ msgid "Échec de l'envoi (timeout)"
+#~ msgstr "Send failed (timeout)"
+
+#~ msgid "Le serveur distant a refusé la connexion"
+#~ msgstr "Remote server refused connection"
+
+#~ msgid "Échec de l'envoi (refus)"
+#~ msgstr "Send failed (refused)"
+
+#~ msgid "Échec de l'envoi : {}"
+#~ msgstr "Send failed: {}"
+
+#~ msgid "Extracteur de code Python, JSON & TXT"
+#~ msgstr "Python/JSON/TXT Code Extractor"
+
+#~ msgid "Dossier à scanner :"
+#~ msgstr "Selected folder: {}"
+
+#~ msgid "Parcourir"
+#~ msgstr "Browse"
+
+#~ msgid "Extraire le code"
+#~ msgstr "Extract Code"
+
+#~ msgid "Sélectionner..."
+#~ msgstr "Select..."
+
+#~ msgid "Gérer les versions"
+#~ msgstr "Manage Versions"
+
+#~ msgid "Réseau..."
+#~ msgstr "Network..."
+
+#~ msgid "Effacer le journal"
+#~ msgstr "Clear Log"
+
+#~ msgid "Journal"
+#~ msgstr "Log"

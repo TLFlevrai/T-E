@@ -5,7 +5,7 @@ from typing import List, Optional
 from src.services.extraction_service import ExtractionService
 from src.logger import setup_logger
 from src.i18n import _
-from ..ui_builder.ui_widgets import UIWidgets
+from ..ui_builder.ui_widgets import UIWidgets, collect_extra_extensions
 
 logger = setup_logger(__name__)
 
@@ -75,11 +75,13 @@ class BaseController:
         return {
             'include_json': self.ui.include_json.get(),
             'include_txt': self.ui.include_txt.get(),
+            'include_md': self.ui.include_md.get(),
             'include_po': self.ui.include_po.get(),
             'include_mo': self.ui.include_mo.get(),
             'include_html': self.ui.include_html.get(),
             'include_css': self.ui.include_css.get(),
             'include_js': self.ui.include_js.get(),
+            'extra_extensions': self._collect_extra_extensions(),
             'ignore_git': self.ui.ignore_git.get(),         # NOUVEAU
             'ignore_pycache': self.ui.ignore_pycache.get()  # NOUVEAU
         }
@@ -92,11 +94,13 @@ class BaseController:
             'show_file_paths': self.ui.show_file_paths.get(),
             'include_structure': self.ui.include_structure.get(),
             'include_txt': self.ui.include_txt.get(),
+            'include_md': self.ui.include_md.get(),
             'include_po': self.ui.include_po.get(),
             'include_mo': self.ui.include_mo.get(),
             'include_html': self.ui.include_html.get(),
             'include_css': self.ui.include_css.get(),
             'include_js': self.ui.include_js.get(),
+            'extra_extensions': self._collect_extra_extensions(),
             'ignore_init': self.ui.ignore_init.get(),
             'ignore_git': self.ui.ignore_git.get(),
             'ignore_pycache': self.ui.ignore_pycache.get(),
@@ -104,6 +108,14 @@ class BaseController:
             'include_file_metadata': self.ui.include_file_metadata.get(),
             'archive_old': self.ui.archive_old.get()
         }
+
+    def _collect_extra_extensions(self) -> list[str]:
+        """Construit `extra_extensions` à partir des cases de l'onglet dédié.
+
+        Délègue à `collect_extra_extensions` (ui_widgets) : le mapping
+        case → extensions vit dans EXTRA_EXT_CHOICES, un seul endroit.
+        """
+        return collect_extra_extensions(self.ui)
 
     def reset_selection(self):
         """Réinitialise la sélection de fichiers."""

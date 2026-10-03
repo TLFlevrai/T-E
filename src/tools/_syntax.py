@@ -1,7 +1,7 @@
 # src/tools/_syntax.py
 """Moteur de surlignage syntaxique pour le bloc-notes amélioré.
 
-Supporte : Python, JavaScript, JSON, HTML, CSS.
+Supporte : Python, JavaScript, JSON, HTML, CSS, YAML.
 Utilise le système de tags de tk.Text pour coloriser le code.
 """
 from __future__ import annotations
@@ -27,6 +27,8 @@ _EXT_MAP = {
     '.scss': 'css',
     '.less': 'css',
     '.md': 'markdown',
+    '.yaml': 'yaml',
+    '.yml': 'yaml',
     '.txt': 'text',
     '.csv': 'text',
     '.xml': 'html',
@@ -140,6 +142,10 @@ _CSS_PROPERTIES = frozenset({
     'flex', 'grid', 'align', 'justify', 'content', 'items',
 })
 
+# YAML accepte deux « booléens » par défaut (1.1) et troisMots-clés de
+# nullité ; `.nan`/`.inf` sont aussi des constantes numériques à part.
+_YAML_CONSTANTS = frozenset({'true', 'false', 'null', 'yes', 'no', 'on', 'off'})
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Regex patterns
@@ -204,12 +210,39 @@ def _build_css_patterns() -> list[tuple[str, str]]:
     ]
 
 
+def _build_yaml_patterns() -> list[tuple[str, str]]:
+    """Patterns YAML. Réutilise uniquement les tags déjà déclarés dans
+    COLORS/TAG_NAMES (comment, string, number, constant, key, operator,
+    bracket) : aucun nouveau tag à ajouter.
+
+    L'ordre compte : les commentaires et les chaînes sont traités avant les
+    clés, pour que `#` ou `:` situés dans une chaîne ne soient pas
+    surlignés comme s'ils structuraient le document.
+    """
+    return [
+        # "inline" = rien après le # jusqu'à la fin de ligne
+        ('comment',   r'#[^\n]*'),
+        # ancres (&x), alias (*x) et tags (!!type) : avant les chaînes
+        # pour ne pas colorer un & ou * à l'intérieur d'une chaîne.
+        ('decorator', r'(?:[&*][\w-]+|!!?\w*)'),
+        # Chaînes simples puis doubles : les guillemets simples n'interprètent
+        # pas les backslashes (seul "" échappe l'apostrophe en YAML).
+        ('string',    r"'(?:[^']|'')*'|\"(?:[^\"\\]|\\.)*\""),
+        # "key:" — le lookahead évite de capturer les deux-points.
+        ('key',       r'^[ \t]*[^\s:#][\w.\- ]*?(?=\s*:(?:\s|$))'),
+        ('constant',  r'\b(?:' + '|'.join(_YAML_CONSTANTS) + r')\b(?=\s*(?:#.*)?$)'),
+        ('number',    r'\b\d+(?:\.\d+)?\b'),
+        ('operator',  r'[-?:,\[\]{}]'),
+    ]
+
+
 _PATTERNS = {
     'python':     _build_python_patterns,
     'javascript': _build_js_patterns,
     'json':       _build_json_patterns,
     'html':       _build_html_patterns,
     'css':        _build_css_patterns,
+    'yaml':       _build_yaml_patterns,
 }
 
 
@@ -258,18 +291,23 @@ class SyntaxHighlighter:
         if not content:
             return
 
-        line_start = start.split('.')[0]
-        offset = self.text.index(start)
+        # Les offsets de `re` sont des index de caractère ABSOLUS dans le
+        # contenu de la plage, alors que tkinter attend (ligne, colonne).
+        # Les confondre revient à tout replier sur la première ligne.
+        base_line = int(str(self.text.index(start)).split('.')[0])
+        base_col = int(str(self.text.index(start)).split('.')[1])
+
+        def _to_index(offset: int) -> str:
+            line = content.count('\n', 0, offset)
+            col = offset - (content.rfind('\n', 0, offset) + 1)
+            return f"{base_line + line}.{base_col + col}"
 
         for token_name, pattern in patterns:
             tag = TAG_NAMES.get(token_name)
             if not tag:
                 continue
             for match in pattern.finditer(content):
-                # Calculer les positions tkinter
-                match_start = f"{line_start}.{match.start()}"
-                match_end = f"{line_start}.{match.end()}"
-                self.text.tag_add(tag, match_start, match_end)
+                self.text.tag_add(tag, _to_index(match.start()), _to_index(match.end()))
 
     def highlight_all(self, lang: str):
         """Surligne tout le contenu du widget."""

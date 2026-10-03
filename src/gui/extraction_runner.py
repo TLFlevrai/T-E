@@ -156,10 +156,15 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             controller.add_info(_("\n--- Extraction terminée avec succès ---"))
             controller.add_info(_("Fichier créé : {}").format(output_filename))
             controller.add_info(_("Emplacement : {}").format(os.path.abspath(output_filename)))
-            controller.add_info(_("Fichiers extraits : {} (Python: {}, JSON: {}, TXT: {}, PO: {}, MO: {}, HTML: {}, CSS: {}, JS: {})").format(
+            controller.add_info(_("Fichiers extraits : {} (Python: {}, JSON: {}, TXT: {}, MD: {}, PO: {}, MO: {}, HTML: {}, CSS: {}, JS: {})").format(
                 stats['total_files'], stats['py_count'], stats['json_count'], stats['txt_count'],
-                stats['po_count'], stats['mo_count'], stats['html_count'], stats['css_count'], stats['js_count']
+                stats.get('md_count', 0), stats['po_count'], stats['mo_count'],
+                stats['html_count'], stats['css_count'], stats['js_count']
             ))
+            # Décompte par extension supplémentaire (toml, yaml, xml, ...)
+            for ext, count in (stats.get('extra_counts') or {}).items():
+                if count:
+                    controller.add_info(_("  - {} : {}").format(ext.upper(), count))
         post(_log_success_summary)
 
         # --- Bloc 2 : Génération PDF (séparé, n'affecte pas le statut d'extraction) ---
@@ -191,6 +196,7 @@ def run_extraction(controller, service, selected_folder, options, selected_files
             + _("  - Fichiers HTML : {}\n").format(stats['html_count'])
             + _("  - Fichiers CSS : {}\n").format(stats['css_count'])
             + _("  - Fichiers JS : {}\n").format(stats['js_count'])
+            + _("  - Fichiers MD : {}\n").format(stats.get('md_count', 0))
             + _("Emplacement : {}").format(os.path.abspath(output_filename))
         )
         if export_pdf and pdf_path:

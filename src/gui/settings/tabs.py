@@ -7,6 +7,12 @@ from tkinter import ttk, messagebox
 from src.i18n import _
 from src.gui.theme_editor import open_theme_editor
 from src.gui.theme import get_font
+from src.gui.ui_builder.ui_widgets import (
+    EXTRA_EXT_CHOICES,
+    apply_extra_extensions,
+    collect_extra_extensions,
+)
+from src.gui.ui_builder.presets import preset_options
 
 
 class FormatsTab:
@@ -25,6 +31,7 @@ class FormatsTab:
             ('include_css', _("Fichiers CSS (.css)"), True),
             ('include_js', _("Fichiers JavaScript (.js)"), True),
             ('include_txt', _("Fichiers texte (.txt)"), False),
+            ('include_md', _("Fichiers Markdown (.md)"), False),
             ('include_po', _("Fichiers traduction PO (.po)"), False),
             ('include_mo', _("Fichiers traduction MO (.mo)"), False),
         ]
@@ -35,6 +42,63 @@ class FormatsTab:
                 cb = ttk.Checkbutton(self.parent, text=label, variable=var)
                 cb.grid(row=i, column=0, sticky=tk.W, pady=4, padx=5)
                 self.dialog._original_options[key] = var.get()
+
+
+class ExtensionsTab:
+    """Onglet Extensions avancées - cases à cocher alimentant
+    `ExtractionOptions.extra_extensions`.
+
+    La description des cases (extensions couvertes, libellés) est lue dans
+    EXTRA_EXT_CHOICES : c'est le même tuple que celui utilisé par
+    BaseController pour reconstruire la liste, donc aucune extension ne peut
+    diverger entre l'affichage et ce qui est réellement extrait.
+    """
+
+    def __init__(self, parent, dialog):
+        self.parent = parent
+        self.dialog = dialog
+        self.ui = dialog.ui
+        self._create()
+
+    def _create(self):
+        # Une case par entrée de EXTRA_EXT_CHOICES ; les cases absentes de
+        # l'UI (extraction headless, tests) sont simplement ignorées.
+        entries = [
+            (attr, exts, label)
+            for attr, exts, label in EXTRA_EXT_CHOICES
+            if getattr(self.ui, attr, None) is not None
+        ]
+
+        if not entries:
+            ttk.Label(
+                self.parent,
+                text=_("Aucune extension supplémentaire disponible."),
+                font=get_font('small'),
+            ).grid(row=0, column=0, sticky=tk.W, pady=4, padx=5)
+            return
+
+        for i, (attr, exts, label) in enumerate(entries):
+            var = getattr(self.ui, attr)
+            ttk.Checkbutton(self.parent, text=_(label), variable=var).grid(
+                row=i, column=0, sticky=tk.W, pady=4, padx=5)
+            self.dialog._original_options[attr] = var.get()
+
+        row = len(entries)
+        ttk.Separator(self.parent, orient=tk.HORIZONTAL).grid(
+            row=row, column=0, sticky=(tk.W, tk.E), pady=15)
+
+        ttk.Label(
+            self.parent,
+            text=_("Ces extensions alimentent « extra_extensions » dans la configuration. "
+                  "Seules les extensions autorisées (liste blanche) sont prises en compte."),
+            font=get_font('small'),
+            wraplength=460,
+            justify=tk.LEFT,
+        ).grid(row=row + 1, column=0, sticky=tk.W, pady=2, padx=5)
+
+    def collect(self) -> list[str]:
+        """Renvoie la liste des extensions cochées (source de vérité UI)."""
+        return collect_extra_extensions(self.ui)
 
 
 class FiltersTab:
@@ -119,6 +183,7 @@ class AdvancedTab:
     def __init__(self, parent, dialog):
         self.parent = parent
         self.dialog = dialog
+        self.ui = dialog.ui
         self.config = dialog.config
 
         self.log_height_var = tk.IntVar(value=self.config.get('gui.log_height', 12))
@@ -200,40 +265,17 @@ class AdvancedTab:
         apply_theme(self.theme_var.get())
 
     def _apply_preset(self):
-        """Applique un preset prédéfini."""
+        """Applique un preset prédéfini (source : src.gui.ui_builder.presets)."""
         preset = self.preset_var.get()
         ui = self.dialog.ui
 
-        presets = {
-            'python_only': {
-                'include_json': False, 'include_html': False, 'include_css': False,
-                'include_js': False, 'include_txt': False, 'include_po': False,
-                'include_mo': False, 'include_structure': True,
-            },
-            'web_assets': {
-                'include_json': True, 'include_html': True, 'include_css': True,
-                'include_js': True, 'include_txt': False, 'include_po': False,
-                'include_mo': False, 'include_structure': True,
-            },
-            'full': {
-                'include_json': True, 'include_html': True, 'include_css': True,
-                'include_js': True, 'include_txt': True, 'include_po': True,
-                'include_mo': True, 'include_structure': True,
-                'include_statistics': True, 'include_file_metadata': True,
-            },
-            'minimal': {
-                'include_json': False, 'include_html': False, 'include_css': False,
-                'include_js': False, 'include_txt': False, 'include_po': False,
-                'include_mo': False, 'include_structure': True,
-                'include_statistics': True,
-            },
-        }
-
-        if preset in presets:
-            for key, value in presets[preset].items():
-                var = getattr(ui, key, None)
-                if var:
-                    var.set(value)
+        for key, value in preset_options(preset).items():
+            if key == 'extra_extensions':
+                apply_extra_extensions(ui, value)
+                continue
+            var = getattr(ui, key, None)
+            if var:
+                var.set(value)
 
     def _save_preset(self):
         """Enregistre la config actuelle comme preset personnalisé."""

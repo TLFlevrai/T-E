@@ -104,7 +104,11 @@ select = [
 ignore = [
     "E501",  # line too long (handled by line-length)
     "B008",  # function call in default argument (sometimes needed)
-    "TRY003", # avoid specifying long messages outside exception (ok for i18n)
+    "TRY003",  # avoid specifying long messages outside exception (ok for i18n)
+    # Signature imposée par le format de rapport historique (voir
+    # stats_writer.write_statistics_section) ; refactorer casserait l'API.
+    "PLR0913",
+    "PLR0917",
 ]
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S106", "S311"]
@@ -157,6 +161,9 @@ module = [
     "fpdf.*",
     "babel.*",
     "polib.*",
+    # PyYAML est une dependance OPTIONNELLE de l'outil Conversion : le
+    # module l'importe paresseusement et degrade proprement s'il manque.
+    "yaml.*",
 ]
 ignore_missing_imports = true
 

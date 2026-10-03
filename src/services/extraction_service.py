@@ -9,7 +9,7 @@ from src.versioning import VersionManager
 from src.logger import setup_logger
 from src.services.interfaces import ICodeExtractor, IVersionManager
 from src.extractor.engine import ExtractionEngine, SUCCESS, FAILED, CANCELLED, NO_SELECTION
-from src.extractor.context import ExtractionContext
+from src.extractor.context import ExtractionContext, CLASSIC_STAT_KEYS
 
 logger = setup_logger(__name__)
 
@@ -128,7 +128,10 @@ class ExtractionService:
             # (use_version gardé pour compatibilité mais ne fait plus grand-chose ici)
             self.version_manager.use_version(folder_name, next_version)
             stats = context.stats
-            ext_keys = ('py', 'json', 'txt', 'po', 'mo', 'html', 'css', 'js')
+            # Le total inclut le Markdown et les extensions supplémentaires :
+            # sinon `total_files` sous-reporterait ce qui a réellement été
+            # écrit dans le journal (régression des rapports de succès).
+            ext_keys = CLASSIC_STAT_KEYS + tuple(context.extra_stat_keys())
             stats_dict = {
                 'py_count': stats.get('py', 0),
                 'json_count': stats.get('json', 0),
@@ -138,7 +141,11 @@ class ExtractionService:
                 'html_count': stats.get('html', 0),
                 'css_count': stats.get('css', 0),
                 'js_count': stats.get('js', 0),
+                'md_count': stats.get('md', 0),
                 'total_files': sum(stats.get(k, 0) for k in ext_keys),
+                'extra_counts': {
+                    k: stats.get(k, 0) for k in context.extra_stat_keys()
+                },
                 'output_filename': str(output_filename)
             }
 

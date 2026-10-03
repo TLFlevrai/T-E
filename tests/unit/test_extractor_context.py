@@ -81,7 +81,7 @@ class TestExtractionContext:
             options=ExtractionOptions(),
             output_path=tmp_path / "out",
         )
-        expected_keys = {'py', 'json', 'txt', 'po', 'mo', 'html', 'css', 'js'}
+        expected_keys = {'py', 'json', 'txt', 'md', 'po', 'mo', 'html', 'css', 'js'}
         assert set(ctx.stats.keys()) == expected_keys
         assert set(ctx.line_counts.keys()) == expected_keys
 
@@ -91,7 +91,7 @@ class TestExtractionContext:
             options=ExtractionOptions(),
             output_path=tmp_path / "out",
         )
-        for key in ['py', 'json', 'txt', 'po', 'mo', 'html', 'css', 'js']:
+        for key in ['py', 'json', 'txt', 'md', 'po', 'mo', 'html', 'css', 'js']:
             assert key in ctx.line_counts
             assert ctx.line_counts[key] == 0
 

@@ -37,12 +37,12 @@ TE est une application tout-en-un conçue pour les développeurs. Elle offre une
 | `Ctrl+1` | **Extraction** | Extraire le code et la structure d'un projet dans un fichier `.txt` |
 | `Ctrl+2` | **Builder** | Reconstituer un projet à partir d'un journal T-E |
 | `Ctrl+3` | **Versions** | Gérer les versions d'export des projets |
-| `Ctrl+4` | **Conversion** | Convertir des fichiers : TXT↔PDF, JSON→TXT, Images, CSV→JSON, Audio, Batch |
+| `Ctrl+4` | **Conversion** | Convertir des fichiers : TXT↔PDF, JSON→TXT, Images, CSV→JSON, YAML→JSON, Audio, Batch |
 | `Ctrl+5` | **YouTube** | Télécharger des vidéos YouTube (MP4 ou MP3) |
 | `Ctrl+6` | **Diff** | Comparer deux fichiers côte à côte |
 | `Ctrl+7` | **Couleurs** | Sélecteur de couleurs avec palette et export |
 | `Ctrl+8` | **Analyseur** | Statistiques de texte, fréquence, encodage, minification |
-| `Ctrl+9` | **Bloc-notes** | Éditeur multi-onglets avec surlignage syntaxique |
+| `Ctrl+9` | **Bloc-notes** | Éditeur multi-onglets avec surlignage syntaxique (Python, JS, JSON, HTML, CSS, YAML) |
 | `Ctrl+0` | **Calculatrice** | Calculatrice standard, scientifique, pourcentage, bases, unités |
 | `Ctrl+K` | **Palette** | Rechercher et lancer un outil ou une action |
 
@@ -54,7 +54,8 @@ TE est une application tout-en-un conçue pour les développeurs. Elle offre une
 
 Scanne un dossier projet et exporte le contenu dans un fichier texte unique, avec structure de dossiers, statistiques et métadonnées.
 
-- Formats supportés : Python, JSON, TXT, PO/MO, HTML, CSS, JS
+- Formats supports : Python, JSON, TXT, MD, PO/MO, HTML, CSS, JS
+- Extensions supplémentaires (onglet **Paramètres → Extensions**) : TOML, YAML (`.yaml`/`.yml`), INI (`.ini`/`.cfg`), XML, Shell (`.sh`), PowerShell (`.ps1`), SQL, TypeScript (`.ts`), Vue (`.vue`), reStructuredText (`.rst`) — toute autre extension de la liste blanche est activable depuis `config.json`
 - Filtrage : `__pycache__`, `.git`, `__init__.py`
 - Préréglages : Python uniquement, Assets Web, Complet, Minimal
 - Export PDF intégré
@@ -63,7 +64,7 @@ Scanne un dossier projet et exporte le contenu dans un fichier texte unique, ave
 
 ### Conversion de fichiers (Alchimiste)
 
-Six modes de conversion intégrés au workspace :
+Sept modes de conversion intégrés au workspace :
 
 | Mode | Onglet | Description |
 |------|--------|-------------|
@@ -71,6 +72,7 @@ Six modes de conversion intégrés au workspace :
 | Vidéo→MP3 | ffmpeg/pydub | Extraction audio de vidéos |
 | Images | PNG↔JPG↔BMP↔WEBP | Conversion + redimensionnement |
 | CSV→JSON | csv, json | Conversion avec délimiteur configurable |
+| YAML→JSON | PyYAML (optionnel) | Conversion YAML→JSON, `pip install PyYAML` si absent |
 | Audio | MP3↔WAV↔OGG | Conversion entre formats audio |
 | Batch | Tous types | Conversion en lot de plusieurs fichiers |
 

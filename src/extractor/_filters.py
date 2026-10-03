@@ -10,6 +10,23 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Iterable
 
+from src.config.schema import ALLOWED_EXTRA_EXTENSIONS
+
+# Ré-export : la liste blanche est DÉFINIE dans src.config.schema (côté
+# couche configuration, sans dépendance au moteur d'extraction pour éviter
+# un cycle d'imports). On la ré-exporte ici car c'est le module de référence
+# des filtres d'extraction.
+__all__ = [
+    'ALLOWED_EXTRA_EXTENSIONS',
+    'EXCLUDED_FILE_SUFFIXES',
+    'EXCLUDED_FILE_NAMES',
+    'DEFAULT_IGNORED_PATTERNS',
+    'should_ignore_dir',
+    'should_ignore_file',
+    'prune_dirs',
+    'iter_safe_txt_files',
+]
+
 # Suffices de fichiers à exclure systématiquement (même avec all_files=True)
 EXCLUDED_FILE_SUFFIXES = (
     ".pyc", ".pyo", ".pyd",
