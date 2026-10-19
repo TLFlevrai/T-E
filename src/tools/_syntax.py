@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import tkinter as tk
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Détection de langage
@@ -34,9 +35,13 @@ _EXT_MAP = {
     '.xml': 'html',
 }
 
-
 def detect_language(filename: str | None, content: str = '') -> str:
-    """Détecte le langage depuis le nom de fichier et le contenu."""
+    """Détecte le langage depuis le nom de fichier et le contenu.
+
+    Priorité : extension de fichier → reconnaissance par motif → ``'text'``.
+    """
+    lang: str | None = None
+
     if filename:
         ext = Path(filename).suffix.lower()
         if ext in _EXT_MAP:
@@ -76,195 +81,175 @@ COLORS = {
     'bracket':    '#FFD700',
     'function':   '#DCDCAA',
     'builtin':    '#4EC9B0',
-    'decorator':  '#C586C0',
-    'regex':      '#D16969',
-    'constant':   '#4FC1FF',
+    'variable':   '#9CDCFE',
+    'class':      '#4EC9B0',
+    'title':      '#D7BA7D',
+    'section':    '#4EC9B0',
+    'meta':       '#C586C0',
+    'string2':    '#CE9178',
+    'line':       '#808080',
+    'error':      '#F44747',
+    'builtin2':   '#4EC9B0',
+    'decorator':  '#DCDCAA',
+    'prompt':     '#6A9955',
+    'string3':    '#CE9178',
+    'string4':    '#CE9178',
+    'number2':    '#B5CEA8',
+    'number3':    '#B5CEA8',
+    'number4':    '#B5CEA8',
+    'number5':    '#B5CEA8',
 }
 
 TAG_NAMES = {
-    'keyword':   'syn_keyword',
-    'string':    'syn_string',
-    'number':    'syn_number',
-    'comment':   'syn_comment',
-    'operator':  'syn_operator',
-    'tag':       'syn_tag',
-    'attribute': 'syn_attribute',
-    'key':       'syn_key',
-    'bracket':   'syn_bracket',
-    'function':  'syn_function',
-    'builtin':   'syn_builtin',
-    'decorator': 'syn_decorator',
-    'regex':     'syn_regex',
-    'constant':  'syn_constant',
+    'keyword':    'Keyword',
+    'string':     'String',
+    'string2':    'String2',
+    'string3':    'String3',
+    'string4':    'String4',
+    'number':     'Number',
+    'number2':    'Number2',
+    'number3':    'Number3',
+    'number4':    'Number4',
+    'number5':    'Number5',
+    'comment':    'Comment',
+    'operator':   'Operator',
+    'bracket':    'Bracket',
+    'function':   'Function',
+    'builtin':    'Builtin',
+    'builtin2':   'Builtin2',
+    'decorator':  'Decorator',
+    'variable':   'Variable',
+    'class':      'Class',
+    'title':      'Title',
+    'section':    'Section',
+    'meta':       'Meta',
+    'tag':        'Tag',
+    'attribute':  'Attribute',
+    'key':        'Key',
+    'prompt':     'Prompt',
+    'line':       'Line',
+    'error':      'Error',
 }
 
-
 # ═══════════════════════════════════════════════════════════════════════════
-# Patterns par langage
+# Helpers Tkinter
 # ═══════════════════════════════════════════════════════════════════════════
 
-_PYTHON_KEYWORDS = frozenset({
-    'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
-    'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
-    'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
-    'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
-    'try', 'while', 'with', 'yield',
-})
-
-_PYTHON_BUILTINS = frozenset({
-    'print', 'len', 'range', 'int', 'str', 'float', 'list', 'dict',
-    'set', 'tuple', 'bool', 'type', 'input', 'open', 'super', 'self',
-    'enumerate', 'zip', 'map', 'filter', 'sorted', 'reversed', 'abs',
-    'all', 'any', 'bin', 'hex', 'oct', 'chr', 'ord', 'min', 'max',
-    'sum', 'round', 'isinstance', 'hasattr', 'getattr', 'setattr',
-})
-
-_JS_KEYWORDS = frozenset({
-    'async', 'await', 'break', 'case', 'catch', 'class', 'const',
-    'continue', 'debugger', 'default', 'delete', 'do', 'else',
-    'export', 'extends', 'finally', 'for', 'from', 'function',
-    'if', 'import', 'in', 'instanceof', 'let', 'new', 'of',
-    'return', 'static', 'super', 'switch', 'this', 'throw',
-    'try', 'typeof', 'var', 'void', 'while', 'with', 'yield',
-})
-
-_JS_CONSTANTS = frozenset({
-    'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-})
-
-_JSON_CONSTANTS = frozenset({'true', 'false', 'null'})
-
-_CSS_PROPERTIES = frozenset({
-    'color', 'background', 'margin', 'padding', 'border', 'display',
-    'font', 'width', 'height', 'position', 'top', 'left', 'right',
-    'bottom', 'z-index', 'opacity', 'overflow', 'text-align',
-    'line-height', 'letter-spacing', 'word-spacing', 'float', 'clear',
-    'flex', 'grid', 'align', 'justify', 'content', 'items',
-})
-
-# YAML accepte deux « booléens » par défaut (1.1) et troisMots-clés de
-# nullité ; `.nan`/`.inf` sont aussi des constantes numériques à part.
-_YAML_CONSTANTS = frozenset({'true', 'false', 'null', 'yes', 'no', 'on', 'off'})
+def _to_index(offset: int, content: str, base_line: int = 1, base_col: int = 0) -> str:
+    """Convertit un offset dans ``content`` en index Tkinter 'ligne.col'."""
+    line = content.count('\n', 0, offset)
+    col = offset - (content.rfind('\n', 0, offset) + 1)
+    return f"{base_line + line}.{base_col + col}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Regex patterns
+# Définitions de motifs par langage
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _build_python_patterns() -> list[tuple[str, str]]:
     return [
-        ('comment',   r'#[^\n]*'),
-        ('string',    r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\''),
-        ('decorator', r'@\w+'),
-        ('number',    r'\b\d+\.?\d*(?:e[+-]?\d+)?\b'),
-        ('builtin',   r'\b(?:' + '|'.join(_PYTHON_BUILTINS) + r')\b'),
-        ('keyword',   r'\b(?:' + '|'.join(_PYTHON_KEYWORDS) + r')\b'),
-        ('function',  r'\b\w+(?=\()'),
-        ('operator',  r'=|!=|<=|>=|<>|<<|>>|\*\*|[+\-*/%&|^~<>]'),
-        ('bracket',   r'[()\[\]{}]'),
+        ('keyword', r'(?<![.#\w])\b(?:False|None|True|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\b'),
+        ('builtin', r'(?<![.#\w])\b(?:abs|all|any|ascii|bin|bool|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dict|dir|divmod|enumerate|eval|exec|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|isinstance|issubclass|iter|len|list|locals|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip)\b'),
+        ('decorator', r'(?<!\w)@\w+'),
+        ('string', r'("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\')'),
+        ('string2', r'("[\s\S]*?"|\'[\s\S]*?\')'),
+        ('string3', r'f(["\']{3}[\s\S]*?\3|f)(?<!\\)(?:"[\s\S]*?"|\'[\s\S]*?\')'),
+        ('string4', r'f(?<!\\)(?:"(?:\\.|[^"\\])*?"|\'(?:\\.|[^\'\\])*?\')'),
+        ('number', r'\b(?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+|\d+\.?\d*[eE][+-]?\d+|\d+\.?\d*|\d*\.?\d+[eE][+-]?\d+|\d*\.?\d+)\b'),
+        ('comment', r'#.*(?:\n|$)'),
+        ('operator', r'[=+\-*/%<>!&|^~?:;,.\[\]{}().]'),
     ]
 
 
 def _build_js_patterns() -> list[tuple[str, str]]:
     return [
-        ('comment',   r'//[^\n]*|/\*[\s\S]*?\*/'),
-        ('string',    r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|`(?:[^`\\]|\\.)*`'),
-        ('regex',     r'/(?:[^/\\]|\\.)+/[gimsuy]*'),
-        ('constant',  r'\b(?:' + '|'.join(_JS_CONSTANTS) + r')\b'),
-        ('number',    r'\b\d+\.?\d*(?:e[+-]?\d+)?\b'),
-        ('keyword',   r'\b(?:' + '|'.join(_JS_KEYWORDS) + r')\b'),
-        ('function',  r'\b\w+(?=\()'),
-        ('operator',  r'=|!=|===|!==|<=|>=|=>|&&|\|\||[+\-*/%&|^~<>!?]'),
-        ('bracket',   r'[()\[\]{}]'),
+        ('keyword', r'(?<![.#\w])\b(?:async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|finally|for|function|if|import|in|instanceof|let|new|of|return|static|super|switch|this|throw|try|typeof|var|void|while|with|yield)\b'),
+        ('builtin', r'(?<![.#\w])\b(?:Array|Boolean|Date|Error|Function|JSON|Math|Number|Object|RegExp|String|Promise|Symbol|Map|Set|WeakMap|WeakSet|console|parseInt|parseFloat|isNaN|isFinite|decodeURI|encodeURI|decodeURIComponent|encodeURIComponent|escape|unescape|eval)\b'),
+        ('string', r'("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\')'),
+        ('string2', r'("(?:\\.|[^"\\])*?"|\'(?:\\.|[^\'\\])*?\')'),
+        ('string3', r'`(?:\\.|[^`\\])*?`'),
+        ('number', r'\b(?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+|\d+\.?\d*[eE][+-]?\d+|\d+\.?\d*|\d*\.?\d+[eE][+-]?\d+|\d*\.?\d+)\b'),
+        ('comment', r'//.*$|\/\*[\s\S]*?\*\/'),
+        ('operator', r'[=+\-*/%<>!&|^~?:;,.\[\]{}().]'),
+        ('function', r'(?<=\s|\()([\w$]+)\s*(?=\()'),
     ]
 
 
 def _build_json_patterns() -> list[tuple[str, str]]:
     return [
-        ('key',       r'"[^"]*"(?=\s*:)'),
-        ('string',    r'"(?:[^"\\]|\\.)*"'),
-        ('constant',  r'\b(?:' + '|'.join(_JSON_CONSTANTS) + r')\b'),
-        ('number',    r'-?\b\d+\.?\d*(?:e[+-]?\d+)?\b'),
-        ('bracket',   r'[()\[\]{}]'),
-        ('operator',  r'[,:;]'),
+        ('key', r'"(?:\\.|[^"\\])*?"\s*(?=\s*:)'),
+        ('string', r'"(?:\\.|[^"\\])*?"'),
+        ('number', r'\b-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?\b'),
+        ('boolean', r'\b(?:true|false)\b'),
+        ('null', r'\bnull\b'),
+        ('operator', r'[:,]'),
     ]
 
 
 def _build_html_patterns() -> list[tuple[str, str]]:
     return [
-        ('comment',   r'<!--[\s\S]*?-->'),
-        ('tag',       r'</?[a-zA-Z][a-zA-Z0-9]*\b[^>]*?/?>'),
-        ('attribute', r'\b[a-zA-Z-]+(?==)'),
-        ('string',    r'"[^"]*"|\'[^\']*\''),
+        ('tag', r'<\/?[\w-]+'),
+        ('attribute', r'(?<=\s)(?:[\w-]+\s*=\s*)?"(?:\\.|[^"\\])*?"'),
+        ('string', r'"(?:\\.|[^"\\])*?"'),
+        ('comment', r'<!--[\s\S]*?-->'),
+        ('operator', r'[=+\-*/%<>!&|^~?:;,.\[\]{}().]'),
     ]
 
 
 def _build_css_patterns() -> list[tuple[str, str]]:
     return [
-        ('comment',   r'/\*[\s\S]*?\*/'),
-        ('string',    r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\''),
-        ('number',    r'[+-]?\b\d+\.?\d*(?:px|em|rem|%|vh|vw|pt|cm|mm|in|s|ms)?\b'),
-        ('keyword',   r'@[a-zA-Z-]+'),
-        ('bracket',   r'[(){}[\]]'),
-        ('operator',  r'[:;{},]'),
+        ('keyword', r'(?<![.#\w])\b(?:inherit|initial|revert|unset|none|auto|block|inline|inline-block|flex|grid|table|hidden|visible|scroll|fixed|absolute|relative|static|sticky|center|flex-start|flex-end|space-between|space-around|space-evenly|wrap|nowrap|wrap-reverse|column|row|normal|bold|italic|underline|line-through|capitalize|uppercase|lowercase|left|right|center|top|bottom|middle|baseline|sub|super|sub|super|dotted|dashed|solid|double|groove|ridge|outset|inset|closer|both|none)\b'),
+        ('number', r'\b\d+\.?\d*(?:px|em|rem|vh|vw|vmin|vmax|%|cm|mm|in|pt|pc|ex|ch|fr|gap|s|ms|Hz|kHz|dpi|dpcm|dppx)?\b'),
+        ('string', r'"(?:\\.|[^"\\])*?"|\'(?:\\.|[^\'\\])*?\''),
+        ('comment', r'/\*[\s\S]*?\*\/'),
+        ('tag', r'(?<![.#\w])[\w-]+(?=\s*\{)'),
+        ('attribute', r'[\w-]+(?=\s*:)'),
+        ('key', r'[\w-]+(?=\s*:)'),
+        ('color', r'#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b'),
+        ('operator', r'[:;{}()]'),
     ]
 
 
 def _build_yaml_patterns() -> list[tuple[str, str]]:
-    """Patterns YAML. Réutilise uniquement les tags déjà déclarés dans
-    COLORS/TAG_NAMES (comment, string, number, constant, key, operator,
-    bracket) : aucun nouveau tag à ajouter.
-
-    L'ordre compte : les commentaires et les chaînes sont traités avant les
-    clés, pour que `#` ou `:` situés dans une chaîne ne soient pas
-    surlignés comme s'ils structuraient le document.
-    """
     return [
-        # "inline" = rien après le # jusqu'à la fin de ligne
-        ('comment',   r'#[^\n]*'),
-        # ancres (&x), alias (*x) et tags (!!type) : avant les chaînes
-        # pour ne pas colorer un & ou * à l'intérieur d'une chaîne.
-        ('decorator', r'(?:[&*][\w-]+|!!?\w*)'),
-        # Chaînes simples puis doubles : les guillemets simples n'interprètent
-        # pas les backslashes (seul "" échappe l'apostrophe en YAML).
-        ('string',    r"'(?:[^']|'')*'|\"(?:[^\"\\]|\\.)*\""),
-        # "key:" — le lookahead évite de capturer les deux-points.
-        ('key',       r'^[ \t]*[^\s:#][\w.\- ]*?(?=\s*:(?:\s|$))'),
-        ('constant',  r'\b(?:' + '|'.join(_YAML_CONSTANTS) + r')\b(?=\s*(?:#.*)?$)'),
-        ('number',    r'\b\d+(?:\.\d+)?\b'),
-        ('operator',  r'[-?:,\[\]{}]'),
+        ('key', r'^\s*[\w.-]+(?=\s*:)'),
+        ('string', r'"(?:\\.|[^"\\])*?"|\'(?:\\.|[^\'\\])*?\''),
+        ('number', r'\b\d+\.?\d*(?:[eE][+-]?\d+)?\b'),
+        ('boolean', r'\b(?:true|false|yes|no|on|off)\b'),
+        ('null', r'\b(?:null|~)\b'),
+        ('comment', r'#.*$'),
+        ('operator', r'[:,{}[\]\-]'),
     ]
 
-
 _PATTERNS = {
-    'python':     _build_python_patterns,
+    'python': _build_python_patterns,
     'javascript': _build_js_patterns,
-    'json':       _build_json_patterns,
-    'html':       _build_html_patterns,
-    'css':        _build_css_patterns,
-    'yaml':       _build_yaml_patterns,
+    'json': _build_json_patterns,
+    'html': _build_html_patterns,
+    'css': _build_css_patterns,
+    'yaml': _build_yaml_patterns,
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Moteur principal
+# Surligneur
 # ═══════════════════════════════════════════════════════════════════════════
 
 class SyntaxHighlighter:
     """Surligne le code source dans un widget tk.Text."""
 
-    def __init__(self, text_widget):
+    def __init__(self, text_widget: tk.Text) -> None:
         self.text = text_widget
-        self._compiled: dict[str, list[tuple[str, re.Pattern]]] = {}
+        self._compiled: dict[str, list[tuple[str, re.Pattern[str]]]] = {}
         self._configure_tags()
 
-    def _configure_tags(self):
+    def _configure_tags(self) -> None:
         for token, color in COLORS.items():
             tag = TAG_NAMES.get(token)
             if tag:
                 self.text.tag_configure(tag, foreground=color)
 
-    def _get_patterns(self, lang: str) -> list[tuple[str, re.Pattern]]:
+    def _get_patterns(self, lang: str) -> list[tuple[str, re.Pattern[str]]] | None:
         if lang not in self._compiled:
             builders = _PATTERNS
             builder = builders.get(lang)
@@ -275,9 +260,12 @@ class SyntaxHighlighter:
                 ]
             else:
                 self._compiled[lang] = []
-        return self._compiled[lang]
+        result = self._compiled.get(lang)
+        if result is None:
+            return []
+        return result
 
-    def highlight_range(self, start: str, end: str, lang: str):
+    def highlight_range(self, start: str, end: str, lang: str) -> None:
         """Applique le surlignage sur la plage [start, end] (format tkinter '1.0')."""
         patterns = self._get_patterns(lang)
         if not patterns:
@@ -288,14 +276,9 @@ class SyntaxHighlighter:
             self.text.tag_remove(tag, start, end)
 
         content = self.text.get(start, end)
-        if not content:
-            return
-
-        # Les offsets de `re` sont des index de caractère ABSOLUS dans le
-        # contenu de la plage, alors que tkinter attend (ligne, colonne).
-        # Les confondre revient à tout replier sur la première ligne.
-        base_line = int(str(self.text.index(start)).split('.')[0])
-        base_col = int(str(self.text.index(start)).split('.')[1])
+        parts = start.split('.', 1)
+        base_line = int(parts[0])
+        base_col = int(parts[1]) if len(parts) > 1 else 0
 
         def _to_index(offset: int) -> str:
             line = content.count('\n', 0, offset)
@@ -309,15 +292,11 @@ class SyntaxHighlighter:
             for match in pattern.finditer(content):
                 self.text.tag_add(tag, _to_index(match.start()), _to_index(match.end()))
 
-    def highlight_all(self, lang: str):
+    def highlight_all(self, lang: str) -> None:
         """Surligne tout le contenu du widget."""
         self.highlight_range('1.0', tk.END, lang)
 
 
-import tkinter as tk
-
-
-def highlight_all(text_widget, lang: str):
+def highlight_all(text_widget: tk.Text, lang: str) -> None:
     """Fonction de commodité : surligne tout le contenu."""
-    highlighter = SyntaxHighlighter(text_widget)
-    highlighter.highlight_range('1.0', tk.END, lang)
+    SyntaxHighlighter(text_widget).highlight_range('1.0', tk.END, lang)

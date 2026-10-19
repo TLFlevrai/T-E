@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "te"
-version = "2.1.0"
+version = "0.0.4.5b"
 description = "TE : toolkit desktop multi-outils (extraction, conversion, vidéo, calculatrice, réseau, versions)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -64,7 +64,7 @@ domain = "messages"
 input_dirs = ["src"]
 output_file = "locale/messages.pot"
 project = "TE"
-version = "2.1.0"
+version = "0.0.4.5b"
 msgid_bugs_address = ""
 copyright_holder = ""
 sort_output = true
@@ -107,6 +107,7 @@ ignore = [
     "TRY003",  # avoid specifying long messages outside exception (ok for i18n)
     # Signature imposée par le format de rapport historique (voir
     # stats_writer.write_statistics_section) ; refactorer casserait l'API.
+    "PLR0911",  # trop de return dans detect_language (filtre heuristique multi-langues)
     "PLR0913",
     "PLR0917",
 ]
